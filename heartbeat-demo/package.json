@@ -1,0 +1,19 @@
+{
+  "name": "tx5dr-plugin-heartbeat-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.2.0",
+    "typescript": "^5.0.0"
+  }
+}

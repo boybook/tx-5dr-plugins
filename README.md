@@ -35,4 +35,9 @@ its own source, metadata, build script, and packaging logic inside its folder.
 
 ## Current Status
 
-Initial repository scaffold. CI and packaging scripts will be added next.
+Initial repository scaffold with migrated demo plugins:
+
+- `heartbeat-demo`
+- `iframe-panel-demo`
+
+CI and packaging scripts will be added next.
