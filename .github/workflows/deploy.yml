@@ -83,20 +83,3 @@ jobs:
         run: |
           ossutil config -e ${OSS_REGION}.aliyuncs.com -i ${OSS_ACCESS_KEY_ID} -k ${OSS_ACCESS_KEY_SECRET}
           ossutil cp -r ./market oss://${OSS_BUCKET}/plugins/market/${{ needs.build.outputs.channel }}/ --force
-
-      - name: Install Aliyun CLI
-        run: |
-          curl -fL -o /tmp/aliyun.tgz https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
-          tar -xzf /tmp/aliyun.tgz -C /tmp
-          sudo mv /tmp/aliyun /usr/local/bin
-
-      - name: Configure Aliyun CLI
-        env:
-          ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-        run: |
-          aliyun configure set --region cn-hangzhou --access-key-id ${ACCESS_KEY_ID} --access-key-secret ${ACCESS_KEY_SECRET}
-
-      - name: Refresh Aliyun CDN Cache
-        run: |
-          aliyun cdn RefreshObjectCaches --ObjectPath "https://dl.tx5dr.com/plugins/market/${{ needs.build.outputs.channel }}/" --ObjectType "Directory" --Force "true"

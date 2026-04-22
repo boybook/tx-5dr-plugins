@@ -6,7 +6,7 @@ Official external plugin repository for TX-5DR.
 
 - Keep non-builtin plugins out of the main application repository
 - Publish an official marketplace catalog from a single source of truth
-- Distribute packaged plugin ZIP assets through OSS/CDN only
+- Distribute packaged plugin ZIP assets through OSS only
 
 ## Repository Layout
 
