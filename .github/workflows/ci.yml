@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate marketplace contract
+        run: node scripts/validate-marketplace.mjs
+
+      - name: Build plugins
+        run: node scripts/build-plugins.mjs
+
+      - name: Package nightly catalog
+        run: node scripts/package-market.mjs --channel nightly --base-url https://dl.tx5dr.com/plugins/market

@@ -13,6 +13,40 @@
     "dev:server": "tsc --watch",
     "dev:ui": "vite build --watch --config ui/vite.config.ts"
   },
+  "tx5drPlugin": {
+    "pluginName": "iframe-panel-demo",
+    "title": "Iframe Panel Demo",
+    "description": "Demonstrates iframe-backed plugin panels and session messaging.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/iframe-panel-demo",
+    "categories": [
+      "demo",
+      "ui"
+    ],
+    "keywords": [
+      "iframe",
+      "panel",
+      "ui"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      },
+      {
+        "from": "dist/ui",
+        "to": "ui"
+      }
+    ]
+  },
   "devDependencies": {
     "@tx5dr/plugin-api": "^1.2.0",
     "@types/react": "^18.3.1",

@@ -12,6 +12,35 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
+  "tx5drPlugin": {
+    "pluginName": "heartbeat-demo",
+    "title": "Heartbeat Demo",
+    "description": "Demonstrates plugin timers, storage, panels, and quick actions.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/heartbeat-demo",
+    "categories": [
+      "demo"
+    ],
+    "keywords": [
+      "timer",
+      "storage",
+      "quick-action"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      }
+    ]
+  },
   "devDependencies": {
     "@tx5dr/plugin-api": "^1.2.0",
     "typescript": "^5.0.0"

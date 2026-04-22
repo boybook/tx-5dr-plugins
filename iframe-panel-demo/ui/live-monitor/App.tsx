@@ -1,6 +1,6 @@
 /// <reference types="@tx5dr/plugin-api/bridge" />
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAutoResize } from '../../../_shared/ui/useAutoResize';
+import { useAutoResize } from '../shared/useAutoResize';
 import './App.css';
 
 const MAX_LOG_LINES = 20;

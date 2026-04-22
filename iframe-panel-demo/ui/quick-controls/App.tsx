@@ -1,6 +1,6 @@
 /// <reference types="@tx5dr/plugin-api/bridge" />
 import { useState, useEffect, useRef } from 'react';
-import { useAutoResize } from '../../../_shared/ui/useAutoResize';
+import { useAutoResize } from '../shared/useAutoResize';
 import './App.css';
 
 export function App() {

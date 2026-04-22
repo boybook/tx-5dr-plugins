@@ -1,6 +1,4 @@
 import type { PluginDefinition, PluginContext } from '@tx5dr/plugin-api';
-import zhLocale from './locales/zh.json' with { type: 'json' };
-import enLocale from './locales/en.json' with { type: 'json' };
 
 export const IFRAME_PANEL_DEMO_PLUGIN_NAME = 'iframe-panel-demo';
 
@@ -142,8 +140,4 @@ export const iframePanelDemoPlugin: PluginDefinition = {
     },
   },
 };
-
-export const iframePanelDemoLocales: Record<string, Record<string, string>> = {
-  zh: zhLocale,
-  en: enLocale,
-};
+export default iframePanelDemoPlugin;

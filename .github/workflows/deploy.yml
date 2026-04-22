@@ -1,0 +1,102 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+          - nightly
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.channel.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve channel
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "value=nightly" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.channel }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate marketplace contract
+        run: node scripts/validate-marketplace.mjs
+
+      - name: Build plugins
+        run: node scripts/build-plugins.mjs
+
+      - name: Package catalog
+        run: node scripts/package-market.mjs --channel ${{ steps.channel.outputs.value }} --base-url https://dl.tx5dr.com/plugins/market
+
+      - name: Upload market artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-${{ steps.channel.outputs.value }}
+          path: .artifacts/market/${{ steps.channel.outputs.value }}
+          retention-days: 1
+
+  deploy-aliyun:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      OSS_BUCKET: tx5dr
+      OSS_REGION: oss-cn-hangzhou
+    steps:
+      - name: Download market artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: market-${{ needs.build.outputs.channel }}
+          path: market
+
+      - name: Install OSSUtil
+        run: |
+          curl -fL -o /tmp/ossutil64 https://gosspublic.alicdn.com/ossutil/1.7.8/ossutil64
+          chmod +x /tmp/ossutil64
+          sudo mv /tmp/ossutil64 /usr/local/bin/ossutil
+
+      - name: Upload to Aliyun OSS
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          ossutil config -e ${OSS_REGION}.aliyuncs.com -i ${OSS_ACCESS_KEY_ID} -k ${OSS_ACCESS_KEY_SECRET}
+          ossutil cp -r ./market oss://${OSS_BUCKET}/plugins/market/${{ needs.build.outputs.channel }}/ --force
+
+      - name: Install Aliyun CLI
+        run: |
+          curl -fL -o /tmp/aliyun.tgz https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar -xzf /tmp/aliyun.tgz -C /tmp
+          sudo mv /tmp/aliyun /usr/local/bin
+
+      - name: Configure Aliyun CLI
+        env:
+          ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          aliyun configure set --region cn-hangzhou --access-key-id ${ACCESS_KEY_ID} --access-key-secret ${ACCESS_KEY_SECRET}
+
+      - name: Refresh Aliyun CDN Cache
+        run: |
+          aliyun cdn RefreshObjectCaches --ObjectPath "https://dl.tx5dr.com/plugins/market/${{ needs.build.outputs.channel }}/" --ObjectType "Directory" --Force "true"

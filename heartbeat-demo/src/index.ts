@@ -1,6 +1,4 @@
 import type { PluginDefinition, PluginContext } from '@tx5dr/plugin-api';
-import zhLocale from './locales/zh.json' with { type: 'json' };
-import enLocale from './locales/en.json' with { type: 'json' };
 
 const TIMER_ID = 'heartbeat';
 const PANEL_ID = 'heartbeat-status';
@@ -107,8 +105,4 @@ export const heartbeatDemoPlugin: PluginDefinition = {
     },
   },
 };
-
-export const heartbeatDemoLocales: Record<string, Record<string, string>> = {
-  zh: zhLocale,
-  en: enLocale,
-};
+export default heartbeatDemoPlugin;
