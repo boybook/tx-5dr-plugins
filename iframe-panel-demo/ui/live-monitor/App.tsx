@@ -1,6 +1,7 @@
 /// <reference types="@tx5dr/plugin-api/bridge" />
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAutoResize } from '../shared/useAutoResize';
+import { t } from '../shared/i18n';
 import './App.css';
 
 const MAX_LOG_LINES = 20;
@@ -30,7 +31,9 @@ export function App() {
     const onTick = (data: any) => {
       const pct = Math.max(0, Math.min(100, (data.signalStrength + 50) / 40 * 100));
       setSignalWidth(pct);
-      appendLog(`Signal: ${data.signalStrength.toFixed(1)} dBm`);
+      appendLog(t('uiSignalLog', 'Signal: {{value}} dBm', {
+        value: data.signalStrength.toFixed(1),
+      }));
     };
     const onCounterUpdated = (data: any) => setCounter(data.counter);
     const onLabelUpdated = (data: any) => setLabel(data.label);

@@ -3,5 +3,12 @@
   "pluginDescription": "Demonstrates iframe custom UI panels in operator card and automation popover.",
   "liveMonitorPanel": "Live Monitor",
   "quickControlsPanel": "Quick Controls",
-  "statsPanel": "Stats"
+  "statsPanel": "Stats",
+  "liveMonitorPage": "Live Monitor",
+  "quickControlsPage": "Quick Controls",
+  "uiLabelPlaceholder": "Label",
+  "uiSetLabel": "Set",
+  "uiIncrement": "+1",
+  "uiReset": "Reset",
+  "uiSignalLog": "Signal: {{value}} dBm"
 }

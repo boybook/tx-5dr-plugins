@@ -3,5 +3,12 @@
   "pluginDescription": "演示 iframe 自定义 UI 面板在操作员卡片和自动化面板中的使用。",
   "liveMonitorPanel": "实时监控",
   "quickControlsPanel": "快捷控制",
-  "statsPanel": "统计信息"
+  "statsPanel": "统计信息",
+  "liveMonitorPage": "实时监控",
+  "quickControlsPage": "快捷控制",
+  "uiLabelPlaceholder": "标签",
+  "uiSetLabel": "设置",
+  "uiIncrement": "+1",
+  "uiReset": "重置",
+  "uiSignalLog": "信号：{{value}} dBm"
 }

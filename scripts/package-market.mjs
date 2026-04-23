@@ -35,6 +35,26 @@ async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, 'utf8'));
 }
 
+async function readLocales(localesDir) {
+  const locales = {};
+
+  if (!await pathExists(localesDir)) {
+    return locales;
+  }
+
+  const entries = await fs.readdir(localesDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) {
+      continue;
+    }
+
+    const language = entry.name.slice(0, -'.json'.length);
+    locales[language] = await readJson(path.join(localesDir, entry.name));
+  }
+
+  return locales;
+}
+
 async function pathExists(filePath) {
   try {
     await fs.access(filePath);
@@ -130,11 +150,13 @@ async function buildCatalogEntry(pluginDir) {
   const artifactBytes = await fs.readFile(zipPath);
   const sha256 = createHash('sha256').update(artifactBytes).digest('hex');
   const stat = await fs.stat(zipPath);
+  const locales = await readLocales(path.join(stageDir, 'locales'));
 
   return {
     name: meta.pluginName,
     title: meta.title,
     description: meta.description,
+    locales: Object.keys(locales).length > 0 ? locales : undefined,
     latestVersion: pkg.version,
     minHostVersion: meta.minHostVersion,
     author: meta.author,

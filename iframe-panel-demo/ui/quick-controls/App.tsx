@@ -1,6 +1,7 @@
 /// <reference types="@tx5dr/plugin-api/bridge" />
 import { useState, useEffect, useRef } from 'react';
 import { useAutoResize } from '../shared/useAutoResize';
+import { t } from '../shared/i18n';
 import './App.css';
 
 export function App() {
@@ -48,17 +49,17 @@ export function App() {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Label"
+          placeholder={t('uiLabelPlaceholder', 'Label')}
           value={labelValue}
           onChange={e => setLabelValue(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <button className="btn btn-sm" onClick={handleSetLabel}>Set</button>
+        <button className="btn btn-sm" onClick={handleSetLabel}>{t('uiSetLabel', 'Set')}</button>
       </div>
       <div className="control-row">
-        <button className="btn btn-primary" onClick={handleIncrement}>+1</button>
+        <button className="btn btn-primary" onClick={handleIncrement}>{t('uiIncrement', '+1')}</button>
         <span className="value">{counter}</span>
-        <button className="btn btn-danger btn-sm" onClick={handleReset}>Reset</button>
+        <button className="btn btn-danger btn-sm" onClick={handleReset}>{t('uiReset', 'Reset')}</button>
       </div>
     </div>
   );

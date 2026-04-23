@@ -28,9 +28,9 @@ function pushToLiveMonitor(
 
 export const iframePanelDemoPlugin: PluginDefinition = {
   name: IFRAME_PANEL_DEMO_PLUGIN_NAME,
-  version: '1.0.0',
+  version: '1.0.1',
   type: 'utility',
-  description: 'Demonstrates iframe custom UI panels in operator card and automation popover',
+  description: 'pluginDescription',
 
   panels: [
     // Operator card: live data push iframe panel
@@ -63,14 +63,14 @@ export const iframePanelDemoPlugin: PluginDefinition = {
     pages: [
       {
         id: 'live-monitor',
-        title: 'Live Monitor',
+        title: 'liveMonitorPage',
         entry: 'live-monitor.html',
         accessScope: 'admin',
         resourceBinding: 'none',
       },
       {
         id: 'quick-controls',
-        title: 'Quick Controls',
+        title: 'quickControlsPage',
         entry: 'quick-controls.html',
         accessScope: 'admin',
         resourceBinding: 'none',
