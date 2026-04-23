@@ -1,0 +1,10 @@
+{
+  "streamViewerPanel": "Video Stream",
+  "streamUrl": "Stream URL",
+  "streamUrlDesc": "Enter stream URL (HLS/RTSP/WebRTC)",
+  "streamType": "Stream Type",
+  "autoplay": "Autoplay",
+  "muted": "Muted",
+  "loadStream": "Load Stream",
+  "enterUrl": "Enter a stream URL and click Load"
+}
