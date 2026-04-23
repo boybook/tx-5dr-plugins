@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--tx5dr-font);
+      font-size: var(--tx5dr-font-size-sm);
+      background: var(--tx5dr-bg);
+      color: var(--tx5dr-text);
+      padding: var(--tx5dr-spacing-xs);
+    }
+    .container {
+      display: flex;
+      gap: var(--tx5dr-spacing-xs);
+      height: 180px;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--tx5dr-spacing-xs);
+    }
+    .sidebar {
+      width: 150px;
+      flex-shrink: 0;
+    }
+    .sidebar input[type="text"] {
+      background: var(--tx5dr-bg-content);
+      color: var(--tx5dr-text);
+      border: 1px solid var(--tx5dr-border);
+      border-radius: var(--tx5dr-radius-sm);
+      padding: 3px 6px;
+      font-family: var(--tx5dr-font);
+      font-size: 11px;
+      width: 100%;
+    }
+    .sidebar input:focus {
+      border-color: var(--tx5dr-primary);
+      outline: none;
+    }
+    .sidebar select {
+      background: var(--tx5dr-bg-content);
+      color: var(--tx5dr-text);
+      border: 1px solid var(--tx5dr-border);
+      border-radius: var(--tx5dr-radius-sm);
+      padding: 3px 6px;
+      font-family: var(--tx5dr-font);
+      font-size: 11px;
+      width: 100%;
+    }
+    .btn {
+      background: var(--tx5dr-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--tx5dr-radius-sm);
+      padding: 3px 8px;
+      cursor: pointer;
+      font-family: var(--tx5dr-font);
+      font-size: var(--tx5dr-font-size-sm);
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--tx5dr-bg-content);
+      color: var(--tx5dr-text);
+      border: 1px solid var(--tx5dr-border);
+    }
+    .btn-row {
+      display: flex;
+      gap: var(--tx5dr-spacing-xs);
+    }
+    .btn-row .btn { flex: 1; }
+    .video-col {
+      flex: 1;
+      min-width: 200px;
+    }
+    .video-wrapper {
+      flex: 1;
+      background: #000;
+      border-radius: var(--tx5dr-radius-sm);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .image-col {
+      width: 150px;
+      flex-shrink: 0;
+    }
+    .image-wrapper {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--tx5dr-radius-sm);
+      overflow: hidden;
+    }
+    .image-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .placeholder {
+      color: var(--tx5dr-text-secondary);
+      font-size: 11px;
+      text-align: center;
+      padding: var(--tx5dr-spacing-xs);
+    }
+    .error-msg {
+      color: var(--tx5dr-danger);
+      font-size: 11px;
+      padding: var(--tx5dr-spacing-xs);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="col sidebar">
+      <input type="text" id="streamUrl" placeholder="Stream URL">
+      <select id="streamType">
+        <option value="hls">HLS</option>
+        <option value="mp4">MP4</option>
+        <option value="webrtc">WebRTC</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn" id="loadBtn">Load</button>
+        <button class="btn btn-secondary" id="toggleBtn" disabled>|></button>
+      </div>
+    </div>
+    <div class="col video-col">
+      <div class="video-wrapper" id="videoContainer">
+        <div class="placeholder">Loading...</div>
+      </div>
+    </div>
+    <div class="col image-col">
+      <div class="image-wrapper" id="imageContainer">
+        <img id="solarImg" src="https://www.hamqsl.com/solar100sc.php" alt="Solar Data">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var bridge = window.tx5dr;
+      var videoEl = null;
+      var hlsInstance = null;
+      var isPlaying = false;
+      var defaultUrl = '';
+      var defaultType = 'hls';
+
+      function loadHlsLibrary() {
+        return new Promise(function(resolve, reject) {
+          if (window.Hls) {
+            resolve(window.Hls);
+            return;
+          }
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+          script.onload = function() { resolve(window.Hls); };
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      function renderVideo(url, type) {
+        var container = document.getElementById('videoContainer');
+        container.innerHTML = '';
+        isPlaying = false;
+        document.getElementById('toggleBtn').textContent = '|>';
+        document.getElementById('toggleBtn').disabled = true;
+
+        if (!url) {
+          container.innerHTML = '<div class="placeholder">No URL</div>';
+          bridge.resize(180);
+          return;
+        }
+
+        if (type === 'hls' || url.indexOf('.m3u8') !== -1) {
+          loadHlsLibrary().then(function(Hls) {
+            if (Hls.isSupported()) {
+              videoEl = document.createElement('video');
+              videoEl.controls = false;
+              videoEl.muted = true;
+              container.appendChild(videoEl);
+
+              hlsInstance = new Hls();
+              hlsInstance.loadSource(url);
+              hlsInstance.attachMedia(videoEl);
+              hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                videoEl.play().then(function() {
+                  isPlaying = true;
+                  document.getElementById('toggleBtn').textContent = '||';
+                  document.getElementById('toggleBtn').disabled = false;
+                });
+              });
+              hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                  container.innerHTML = '<div class="error-msg">HLS Error</div>';
+                  bridge.resize(180);
+                }
+              });
+            } else {
+              container.innerHTML = '<div class="error-msg">No support</div>';
+            }
+            bridge.resize(180);
+          }).catch(function() {
+            container.innerHTML = '<div class="error-msg">Load fail</div>';
+            bridge.resize(180);
+          });
+        } else {
+          videoEl = document.createElement('video');
+          videoEl.src = url;
+          videoEl.controls = false;
+          videoEl.muted = true;
+          container.appendChild(videoEl);
+          videoEl.play().then(function() {
+            isPlaying = true;
+            document.getElementById('toggleBtn').textContent = '||';
+            document.getElementById('toggleBtn').disabled = false;
+          }).catch(function() {});
+          bridge.resize(180);
+        }
+      }
+
+      function loadConfig() {
+        bridge.invoke('getConfig').then(function(config) {
+          defaultUrl = config.streamUrl || '';
+          defaultType = config.streamType || 'hls';
+          document.getElementById('streamUrl').value = defaultUrl;
+          document.getElementById('streamType').value = defaultType;
+          if (defaultUrl) {
+            renderVideo(defaultUrl, defaultType);
+          } else {
+            document.getElementById('videoContainer').innerHTML = '<div class="placeholder">Set URL</div>';
+            bridge.resize(180);
+          }
+        }).catch(function() {
+          document.getElementById('videoContainer').innerHTML = '<div class="error-msg">Config error</div>';
+          bridge.resize(180);
+        });
+      }
+
+      loadConfig();
+
+      document.getElementById('loadBtn').addEventListener('click', function() {
+        var url = document.getElementById('streamUrl').value.trim();
+        var type = document.getElementById('streamType').value;
+        renderVideo(url, type);
+      });
+
+      document.getElementById('toggleBtn').addEventListener('click', function() {
+        if (!videoEl) return;
+        if (isPlaying) {
+          videoEl.pause();
+          isPlaying = false;
+          document.getElementById('toggleBtn').textContent = '|>';
+        } else {
+          videoEl.play().then(function() {
+            isPlaying = true;
+            document.getElementById('toggleBtn').textContent = '||';
+          });
+        }
+      });
+
+      bridge.resize(180);
+    })();
+  </script>
+</body>
+</html>

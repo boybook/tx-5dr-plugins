@@ -1,0 +1,10 @@
+{
+  "streamViewerPanel": "视频流",
+  "streamUrl": "视频地址",
+  "streamUrlDesc": "输入视频流地址 (HLS/RTSP/WebRTC)",
+  "streamType": "视频类型",
+  "autoplay": "自动播放",
+  "muted": "静音",
+  "loadStream": "加载视频",
+  "enterUrl": "输入视频流地址并点击加载"
+}
