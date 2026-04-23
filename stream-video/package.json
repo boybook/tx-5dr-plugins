@@ -1,0 +1,20 @@
+{
+  "name": "stream-video",
+  "version": "1.1.0",
+  "description": "Display custom streaming video with solar data",
+  "scripts": {
+    "build": "echo 'No build required'"
+  },
+  "tx5drPlugin": {
+    "pluginName": "stream-video",
+    "title": "Stream Video",
+    "description": "Display custom streaming video with solar data",
+    "minHostVersion": "1.0.0",
+    "entry": "index.js",
+    "include": [
+      { "from": "index.js", "to": "index.js" },
+      { "from": "locales", "to": "locales" },
+      { "from": "ui", "to": "ui" }
+    ]
+  }
+}
