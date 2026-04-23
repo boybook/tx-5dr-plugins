@@ -1,0 +1,50 @@
+{
+  "name": "tx5dr-plugin-qso-session-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "tx5drPlugin": {
+    "pluginName": "qso-session-inspector",
+    "title": "QSO Session Inspector",
+    "description": "Tracks slot, decode, and QSO lifecycle events for inspection and debugging.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/qso-session-inspector",
+    "categories": [
+      "demo",
+      "inspection"
+    ],
+    "keywords": [
+      "qso",
+      "session",
+      "debug",
+      "hook"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.2.0",
+    "typescript": "^5.0.0"
+  }
+}

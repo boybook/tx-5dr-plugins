@@ -80,6 +80,7 @@ Initial repository scaffold with migrated demo plugins:
 
 - `heartbeat-demo`
 - `iframe-panel-demo`
+- `qso-session-inspector`
 
 Root tooling is just plain Node scripts under `scripts/`:
 
