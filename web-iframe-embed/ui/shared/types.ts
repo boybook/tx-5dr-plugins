@@ -1,4 +1,9 @@
-export type Placement = 'operator' | 'automation';
+export type Placement =
+  | 'operator'
+  | 'automation'
+  | 'main-right'
+  | 'voice-left-top'
+  | 'voice-right-top';
 
 export type StreamType = 'hls' | 'file';
 

@@ -3,7 +3,19 @@
     "target": "ES2021",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
     "strict": true,
+    "paths": {
+      "@tx5dr/contracts": [
+        "../../../tx-5dr/packages/contracts/dist/index.d.ts"
+      ],
+      "@tx5dr/plugin-api": [
+        "../../../tx-5dr/packages/plugin-api/dist/index.d.ts"
+      ],
+      "@tx5dr/plugin-api/bridge": [
+        "../../../tx-5dr/packages/plugin-api/src/bridge.d.ts"
+      ]
+    },
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

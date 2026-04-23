@@ -2,25 +2,57 @@ import type { PluginContext, PluginDefinition, PluginUIRequestContext } from '@t
 
 export const WEB_IFRAME_EMBED_PLUGIN_NAME = 'web-iframe-embed';
 
-const OPERATOR_PAGE_ID = 'operator-webview';
-const AUTOMATION_PAGE_ID = 'automation-webview';
+const PANEL_DEFINITIONS = [
+  {
+    pageId: 'operator-webview',
+    placement: 'operator',
+    configKey: 'operatorCardUrl',
+    titleKey: 'operatorPageTitle',
+    entry: 'operator-webview.html',
+    panel: { width: 'full' as const },
+  },
+  {
+    pageId: 'automation-webview',
+    placement: 'automation',
+    configKey: 'automationPopoverUrl',
+    titleKey: 'automationPageTitle',
+    entry: 'automation-webview.html',
+    panel: { slot: 'automation' as const },
+  },
+  {
+    pageId: 'main-right-webview',
+    placement: 'main-right',
+    configKey: 'mainRightPaneUrl',
+    titleKey: 'mainRightPageTitle',
+    entry: 'main-right-webview.html',
+    panel: { slot: 'main-right' as const, width: 'full' as const },
+  },
+  {
+    pageId: 'voice-left-top-webview',
+    placement: 'voice-left-top',
+    configKey: 'voiceLeftTopUrl',
+    titleKey: 'voiceLeftTopPageTitle',
+    entry: 'voice-left-top-webview.html',
+    panel: { slot: 'voice-left-top' as const, width: 'full' as const },
+  },
+  {
+    pageId: 'voice-right-top-webview',
+    placement: 'voice-right-top',
+    configKey: 'voiceRightTopUrl',
+    titleKey: 'voiceRightTopPageTitle',
+    entry: 'voice-right-top-webview.html',
+    panel: { slot: 'voice-right-top' as const, width: 'full' as const },
+  },
+] as const;
 
-type Placement = 'operator' | 'automation';
-
-type ConfigKey = 'operatorCardUrl' | 'automationPopoverUrl';
+type Placement = typeof PANEL_DEFINITIONS[number]['placement'];
+type ConfigKey = typeof PANEL_DEFINITIONS[number]['configKey'];
+type PageId = typeof PANEL_DEFINITIONS[number]['pageId'];
 
 interface PageConfigResponse {
-  pageId: string;
+  pageId: PageId;
   placement: Placement;
   url: string;
-}
-
-function buildPageConfig(ctx: PluginContext, pageId: string): PageConfigResponse {
-  return {
-    pageId,
-    placement: getPlacement(pageId),
-    url: getConfiguredUrl(ctx, getConfigKey(pageId)),
-  };
 }
 
 function requireOperatorTarget(requestContext: PluginUIRequestContext): string {
@@ -30,12 +62,12 @@ function requireOperatorTarget(requestContext: PluginUIRequestContext): string {
   return requestContext.instanceTarget.operatorId;
 }
 
-function getPlacement(pageId: string): Placement {
-  return pageId === AUTOMATION_PAGE_ID ? 'automation' : 'operator';
-}
-
-function getConfigKey(pageId: string): ConfigKey {
-  return pageId === AUTOMATION_PAGE_ID ? 'automationPopoverUrl' : 'operatorCardUrl';
+function getPanelDefinition(pageId: string) {
+  const panel = PANEL_DEFINITIONS.find((entry) => entry.pageId === pageId);
+  if (!panel) {
+    throw new Error(`Unknown page id: ${pageId}`);
+  }
+  return panel;
 }
 
 function getConfiguredUrl(ctx: { config: Record<string, unknown> }, key: ConfigKey): string {
@@ -43,18 +75,23 @@ function getConfiguredUrl(ctx: { config: Record<string, unknown> }, key: ConfigK
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function syncPanelMeta(ctx: PluginContext) {
-  const operatorUrl = getConfiguredUrl(ctx, 'operatorCardUrl');
-  const automationUrl = getConfiguredUrl(ctx, 'automationPopoverUrl');
+function buildPageConfig(ctx: PluginContext, pageId: string): PageConfigResponse {
+  const panel = getPanelDefinition(pageId);
+  return {
+    pageId: panel.pageId,
+    placement: panel.placement,
+    url: getConfiguredUrl(ctx, panel.configKey),
+  };
+}
 
-  ctx.ui.setPanelMeta(OPERATOR_PAGE_ID, {
-    visible: operatorUrl.length > 0,
-    title: '',
-  });
-  ctx.ui.setPanelMeta(AUTOMATION_PAGE_ID, {
-    visible: automationUrl.length > 0,
-    title: '',
-  });
+function syncPanelMeta(ctx: PluginContext) {
+  for (const panel of PANEL_DEFINITIONS) {
+    const url = getConfiguredUrl(ctx, panel.configKey);
+    ctx.ui.setPanelMeta(panel.pageId, {
+      visible: url.length > 0,
+      title: '',
+    });
+  }
 }
 
 function pushConfigUpdated(ctx: PluginContext, pageId: string): void {
@@ -72,22 +109,37 @@ function pushConfigUpdated(ctx: PluginContext, pageId: string): void {
 }
 
 function notifyConfigUpdated(ctx: PluginContext): void {
-  pushConfigUpdated(ctx, OPERATOR_PAGE_ID);
-  pushConfigUpdated(ctx, AUTOMATION_PAGE_ID);
+  for (const panel of PANEL_DEFINITIONS) {
+    pushConfigUpdated(ctx, panel.pageId);
+  }
 }
 
 const plugin: PluginDefinition = {
   name: WEB_IFRAME_EMBED_PLUGIN_NAME,
-  version: '1.0.0',
+  version: '1.1.2',
   type: 'utility',
   description: 'pluginDescription',
 
   settings: {
+    globalLayoutGuide: {
+      type: 'info',
+      default: '',
+      label: 'globalLayoutGuideLabel',
+      description: 'globalLayoutGuideDescription',
+      scope: 'global',
+    },
     embedNotice: {
       type: 'info',
       default: '',
       label: 'embedNoticeLabel',
       description: 'embedNoticeDescription',
+      scope: 'global',
+    },
+    operatorLayoutGuide: {
+      type: 'info',
+      default: '',
+      label: 'operatorLayoutGuideLabel',
+      description: 'operatorLayoutGuideDescription',
       scope: 'operator',
     },
     operatorCardUrl: {
@@ -102,45 +154,48 @@ const plugin: PluginDefinition = {
       default: '',
       label: 'automationPopoverUrlLabel',
       description: 'automationPopoverUrlDescription',
-      scope: 'operator',
+      scope: 'global',
+    },
+    mainRightPaneUrl: {
+      type: 'string',
+      default: '',
+      label: 'mainRightPaneUrlLabel',
+      description: 'mainRightPaneUrlDescription',
+      scope: 'global',
+    },
+    voiceLeftTopUrl: {
+      type: 'string',
+      default: '',
+      label: 'voiceLeftTopUrlLabel',
+      description: 'voiceLeftTopUrlDescription',
+      scope: 'global',
+    },
+    voiceRightTopUrl: {
+      type: 'string',
+      default: '',
+      label: 'voiceRightTopUrlLabel',
+      description: 'voiceRightTopUrlDescription',
+      scope: 'global',
     },
   },
 
-  panels: [
-    {
-      id: OPERATOR_PAGE_ID,
-      title: '',
-      component: 'iframe',
-      pageId: OPERATOR_PAGE_ID,
-      width: 'full',
-    },
-    {
-      id: AUTOMATION_PAGE_ID,
-      title: '',
-      component: 'iframe',
-      pageId: AUTOMATION_PAGE_ID,
-      slot: 'automation',
-    },
-  ],
+  panels: PANEL_DEFINITIONS.map((panel) => ({
+    id: panel.pageId,
+    title: '',
+    component: 'iframe' as const,
+    pageId: panel.pageId,
+    ...panel.panel,
+  })),
 
   ui: {
     dir: 'ui',
-    pages: [
-      {
-        id: OPERATOR_PAGE_ID,
-        title: 'operatorPageTitle',
-        entry: 'operator-webview.html',
-        accessScope: 'operator',
-        resourceBinding: 'operator',
-      },
-      {
-        id: AUTOMATION_PAGE_ID,
-        title: 'automationPageTitle',
-        entry: 'automation-webview.html',
-        accessScope: 'operator',
-        resourceBinding: 'operator',
-      },
-    ],
+    pages: PANEL_DEFINITIONS.map((panel) => ({
+      id: panel.pageId,
+      title: panel.titleKey,
+      entry: panel.entry,
+      accessScope: 'operator' as const,
+      resourceBinding: 'operator' as const,
+    })),
   },
 
   async onLoad(ctx) {
@@ -151,18 +206,15 @@ const plugin: PluginDefinition = {
         switch (action) {
           case 'getConfig': {
             const operatorId = requireOperatorTarget(requestContext);
-            const placement = getPlacement(pageId);
-            const key = getConfigKey(pageId);
-            const url = getConfiguredUrl(ctx, key);
+            const response = buildPageConfig(ctx, pageId);
 
             ctx.log.debug('Resolved panel embed config', {
               operatorId,
               pageId,
-              placement,
-              hasUrl: url.length > 0,
+              placement: response.placement,
+              hasUrl: response.url.length > 0,
             });
 
-            const response = buildPageConfig(ctx, pageId);
             return response;
           }
           default:

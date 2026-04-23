@@ -22,6 +22,15 @@ function getPageId(): string {
   return document.body.dataset.pageId ?? 'unknown-page';
 }
 
+function getPlacement(): string {
+  return document.body.dataset.placement ?? 'operator';
+}
+
+function shouldUseManualResize(): boolean {
+  const placement = getPlacement();
+  return placement !== 'main-right' && placement !== 'voice-right-top';
+}
+
 function getHeightStorageKey(): string {
   return `${PLUGIN_HEIGHT_STORAGE_PREFIX}${getPageId()}`;
 }
@@ -56,7 +65,7 @@ function saveStoredHeight(height: number): void {
 function createSurface(): {
   shell: HTMLDivElement;
   surface: HTMLDivElement;
-  resizeHandle: HTMLDivElement;
+  resizeHandle: HTMLDivElement | null;
 } {
   const shell = document.createElement('div');
   shell.className = 'fill-shell';
@@ -64,11 +73,17 @@ function createSurface(): {
   const surface = document.createElement('div');
   surface.className = 'fill-surface';
 
-  const resizeHandle = document.createElement('div');
-  resizeHandle.className = 'resize-handle';
-  resizeHandle.title = 'Resize';
+  let resizeHandle: HTMLDivElement | null = null;
+  if (shouldUseManualResize()) {
+    resizeHandle = document.createElement('div');
+    resizeHandle.className = 'resize-handle';
+    resizeHandle.title = 'Resize';
+    shell.append(surface, resizeHandle);
+  } else {
+    shell.classList.add('fill-shell--full');
+    shell.append(surface);
+  }
 
-  shell.append(surface, resizeHandle);
   return { shell, surface, resizeHandle };
 }
 
@@ -380,7 +395,9 @@ async function main(): Promise<void> {
 
   const layout = createSurface();
   root.replaceChildren(layout.shell);
-  installResizeHandle(layout.shell, layout.resizeHandle);
+  if (layout.resizeHandle) {
+    installResizeHandle(layout.shell, layout.resizeHandle);
+  }
   let lastRenderKey = '';
   const renderResponse = async (response: PageConfigResponse) => {
     const renderConfig = createRenderConfig(response.url);

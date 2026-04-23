@@ -1,6 +1,6 @@
 {
   "name": "tx5dr-plugin-web-iframe-embed",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -15,8 +15,8 @@
   },
   "tx5drPlugin": {
     "pluginName": "web-iframe-embed",
-    "title": "Web Iframe Embed",
-    "description": "Embed external web pages or stream/video URLs in operator and automation panels.",
+    "title": "Web Embed",
+    "description": "Embed external web pages or stream/video URLs in TX-5DR panels.",
     "minHostVersion": "1.0.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
@@ -51,7 +51,7 @@
     ]
   },
   "devDependencies": {
-    "@tx5dr/plugin-api": "^1.2.1",
+    "@tx5dr/plugin-api": "^1.3.0",
     "hls.js": "^1.5.20",
     "typescript": "^5.0.0",
     "vite": "^6.3.4"
