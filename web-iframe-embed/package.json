@@ -1,0 +1,59 @@
+{
+  "name": "tx5dr-plugin-web-iframe-embed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build --config ui/vite.config.ts && node scripts/dev-notify.mjs",
+    "dev:server": "tsc --watch",
+    "dev:ui": "vite build --watch --config ui/vite.config.ts"
+  },
+  "tx5drPlugin": {
+    "pluginName": "web-iframe-embed",
+    "title": "Web Iframe Embed",
+    "description": "Embed external web pages or stream/video URLs in operator and automation panels.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/web-iframe-embed",
+    "categories": [
+      "ui",
+      "webview",
+      "media"
+    ],
+    "keywords": [
+      "iframe",
+      "embed",
+      "video",
+      "hls",
+      "m3u8"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      },
+      {
+        "from": "dist/ui",
+        "to": "ui"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.2.1",
+    "hls.js": "^1.5.20",
+    "typescript": "^5.0.0",
+    "vite": "^6.3.4"
+  }
+}
