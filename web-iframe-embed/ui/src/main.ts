@@ -340,7 +340,14 @@ function renderIframe(container: HTMLElement, src: string): void {
   frame.className = 'embed-frame embed-frame--loading';
   frame.src = src;
   frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  frame.allow = 'autoplay; fullscreen; picture-in-picture';
+  frame.allow = [
+    'autoplay',
+    'fullscreen',
+    'picture-in-picture',
+    'clipboard-read',
+    'clipboard-write',
+    'storage-access-api',
+  ].join('; ');
   frame.loading = 'eager';
   container.appendChild(frame);
 
