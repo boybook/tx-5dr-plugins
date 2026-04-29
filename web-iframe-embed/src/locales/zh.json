@@ -36,9 +36,11 @@
   "mainRightPaneUrlDescription": "全局生效，显示在主面板最右侧的扩展面板中。",
   "voiceLeftTopUrlLabel": "语音左侧频率控制面板上方网页地址",
   "voiceLeftTopUrlDescription": "全局生效，显示在语音模式左侧频率控制面板上方。",
-  "voiceRightTopUrlLabel": "语音右侧面板网页地址",
-  "voiceRightTopUrlDescription": "全局生效，显示在语音模式右侧上方面板中。",
   "mainRightPageTitle": "右侧网页面板",
   "voiceLeftTopPageTitle": "语音左侧网页面板",
-  "voiceRightTopPageTitle": "语音右侧网页面板"
+  "voiceRightTabsLabel": "语音右侧网页标签页",
+  "voiceRightTabsDescription": "新增、重命名或删除显示在语音模式右侧上方面板中的全局网页标签页。",
+  "voiceRightTabTitleLabel": "标签页标题",
+  "voiceRightTabUrlLabel": "网页地址",
+  "voiceRightDynamicPageTitle": "语音右侧网页标签页"
 }

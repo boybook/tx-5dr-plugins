@@ -419,7 +419,9 @@ async function main(): Promise<void> {
   const refresh = async () => {
     let response: PageConfigResponse;
     try {
-      response = await window.tx5dr.invoke<PageConfigResponse>('getConfig', {});
+      response = await window.tx5dr.invoke<PageConfigResponse>('getConfig', {
+        tabId: window.tx5dr.params.tabId,
+      });
     } catch {
       return;
     }

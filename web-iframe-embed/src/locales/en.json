@@ -36,9 +36,11 @@
   "mainRightPaneUrlDescription": "Global URL shown in the far-right extension pane of the main screen.",
   "voiceLeftTopUrlLabel": "Voice left frequency panel upper page URL",
   "voiceLeftTopUrlDescription": "Global URL shown above the frequency control panel in voice mode.",
-  "voiceRightTopUrlLabel": "Voice right panel page URL",
-  "voiceRightTopUrlDescription": "Global URL shown in the upper-right panel area in voice mode.",
   "mainRightPageTitle": "Main Right Web Panel",
   "voiceLeftTopPageTitle": "Voice Left Web Panel",
-  "voiceRightTopPageTitle": "Voice Right Web Panel"
+  "voiceRightTabsLabel": "Voice right web tabs",
+  "voiceRightTabsDescription": "Add, rename, or remove global web tabs shown in the voice-mode upper-right panel.",
+  "voiceRightTabTitleLabel": "Tab title",
+  "voiceRightTabUrlLabel": "Page URL",
+  "voiceRightDynamicPageTitle": "Voice Right Web Tab"
 }
