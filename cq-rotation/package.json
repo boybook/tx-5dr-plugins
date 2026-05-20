@@ -1,0 +1,61 @@
+{
+  "name": "tx5dr-plugin-cq-rotation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build --config ui/vite.config.ts",
+    "dev:server": "tsc --watch",
+    "dev:ui": "vite build --watch --config ui/vite.config.ts"
+  },
+  "tx5drPlugin": {
+    "pluginName": "cq-rotation",
+    "title": "CQ Rotation",
+    "description": "Multi-operator timed CQ rotation with configurable intervals and ordering.",
+    "minHostVersion": "1.0.0",
+    "author": "Luoyumoe",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/Luoyumoe/tx-5dr-plugins",
+    "categories": [
+      "automation",
+      "operator"
+    ],
+    "keywords": [
+      "cq",
+      "rotation",
+      "multi-operator",
+      "autocall"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "locales",
+        "to": "locales"
+      },
+      {
+        "from": "dist/ui",
+        "to": "ui"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.2.0",
+    "@types/node": "^25.9.1",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.0.0",
+    "vite": "^6.3.4"
+  }
+}
