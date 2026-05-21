@@ -92,24 +92,6 @@ export class RotationManager {
     this.broadcastState();
   }
 
-  skipToNext(): void {
-    const state = this.getState();
-    if (!state.isRunning) return;
-
-    const nextIndex = this.computeNextIndex(state);
-    this.setState({
-      currentIndex: nextIndex,
-      lastSwitchTimestamp: Date.now(),
-      failCount: 0,
-      waitingForQSO: false,
-    });
-
-    this.ctx.log.info('Skipped to next operator', {
-      nextCallsign: state.operatorCallsigns[nextIndex],
-    });
-    this.broadcastState();
-  }
-
   updateOperatorList(callsigns: string[]): void {
     const state = this.getState();
     if (!state.isRunning) return;

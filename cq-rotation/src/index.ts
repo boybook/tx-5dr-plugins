@@ -89,7 +89,6 @@ export const cqRotationPlugin: PluginDefinition = {
   quickActions: [
     { id: 'start-rotation', label: 'startRotation', icon: 'play' },
     { id: 'stop-rotation', label: 'stopRotation', icon: 'stop' },
-    { id: 'skip-to-next', label: 'skipToNext', icon: 'forward-step' },
   ],
 
   onLoad(ctx: PluginContext) {
@@ -165,9 +164,6 @@ export const cqRotationPlugin: PluginDefinition = {
           break;
         case 'stop-rotation':
           manager.stop();
-          break;
-        case 'skip-to-next':
-          manager.skipToNext();
           break;
       }
     },

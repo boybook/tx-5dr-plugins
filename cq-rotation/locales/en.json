@@ -14,6 +14,5 @@
   "modeSequential": "Sequential",
   "modeRandom": "Random",
   "startRotation": "Start Rotation",
-  "stopRotation": "Stop Rotation",
-  "skipToNext": "Skip Current"
+  "stopRotation": "Stop Rotation"
 }

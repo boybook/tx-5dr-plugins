@@ -14,6 +14,5 @@
   "modeSequential": "顺序",
   "modeRandom": "随机",
   "startRotation": "开始轮换",
-  "stopRotation": "停止轮换",
-  "skipToNext": "跳过当前"
+  "stopRotation": "停止轮换"
 }
