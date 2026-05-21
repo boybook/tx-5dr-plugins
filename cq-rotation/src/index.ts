@@ -48,42 +48,41 @@ export const cqRotationPlugin: PluginDefinition = {
       default: '',
       label: 'rotationOverview',
       description: 'rotationOverviewDesc',
-      scope: 'operator',
+      scope: 'global',
     },
     enabled: {
       type: 'boolean',
       default: false,
       label: 'enabled',
       description: 'enabledDesc',
-      scope: 'operator',
+      scope: 'global',
+    },
+    operatorCallsigns: {
+      type: 'string[]',
+      default: [],
+      label: 'operatorCallsigns',
+      description: 'operatorCallsignsDesc',
+      scope: 'global',
     },
     intervalSeconds: {
       type: 'number',
       default: 120,
       label: 'intervalSeconds',
       description: 'intervalSecondsDesc',
-      scope: 'operator',
+      scope: 'global',
       min: 15,
-      max: 600,
+      max: 86400,
     },
     mode: {
       type: 'string',
       default: 'sequential',
       label: 'mode',
       description: 'modeDesc',
-      scope: 'operator',
+      scope: 'global',
       options: [
         { label: 'modeSequential', value: 'sequential' },
         { label: 'modeRandom', value: 'random' },
       ],
-    },
-    shuffleCoverAll: {
-      type: 'boolean',
-      default: true,
-      label: 'shuffleCoverAll',
-      description: 'shuffleCoverAllDesc',
-      scope: 'operator',
-      visibleWhen: { setting: 'mode', equals: 'random' },
     },
   },
 
@@ -93,84 +92,9 @@ export const cqRotationPlugin: PluginDefinition = {
     { id: 'skip-to-next', label: 'skipToNext', icon: 'forward-step' },
   ],
 
-  quickSettings: [
-    { settingKey: 'enabled' },
-  ],
-
-  ui: {
-    dir: 'ui',
-    pages: [
-      {
-        id: 'rotation-panel',
-        title: 'rotationPanel',
-        entry: 'rotation-panel.html',
-        accessScope: 'operator',
-        resourceBinding: 'none',
-      },
-    ],
-  },
-
-  panels: [
-    {
-      id: 'cq-rotation-panel',
-      title: 'cqRotationPanel',
-      component: 'iframe',
-      pageId: 'rotation-panel',
-      slot: 'operator',
-      width: 'full',
-    },
-  ],
-
   onLoad(ctx: PluginContext) {
     const manager = getOrCreateManager(ctx);
     manager.initialize();
-
-    ctx.ui.registerPageHandler({
-      async onMessage(
-        _pageId: string,
-        action: string,
-        data: unknown,
-        requestContext,
-      ) {
-        const d = data as Record<string, unknown>;
-        switch (action) {
-          case 'getState':
-            return manager.getFullState();
-
-          case 'startRotation':
-            manager.start();
-            return { ok: true };
-
-          case 'stopRotation':
-            manager.stop();
-            return { ok: true };
-
-          case 'skipToNext':
-            manager.skipToNext();
-            return { ok: true };
-
-          case 'shuffleOrder':
-            manager.shuffleOrder();
-            return { ok: true };
-
-          case 'setOrder':
-            manager.setOrder((d?.callsigns as string[]) || []);
-            return { ok: true };
-
-          case 'updateSettings':
-            if (d?.intervalSeconds !== undefined) {
-              await ctx.updateConfig({ intervalSeconds: d.intervalSeconds });
-            }
-            if (d?.mode !== undefined) {
-              await ctx.updateConfig({ mode: d.mode });
-            }
-            return { ok: true };
-
-          default:
-            return null;
-        }
-      },
-    });
   },
 
   onUnload(ctx: PluginContext) {
@@ -193,10 +117,25 @@ export const cqRotationPlugin: PluginDefinition = {
         case 'operator-check':
           manager.handleOperatorCheck();
           break;
-        case 'rotation-tick':
-          manager.handleRotationTick();
-          break;
       }
+    },
+
+    onSlotStart(slotInfo, _messages, ctx) {
+      const manager = managers.get(ctx.operator.id);
+      if (!manager) return;
+      manager.handleSlotStart(slotInfo.startMs);
+    },
+
+    onQSOComplete(_record, ctx) {
+      const manager = managers.get(ctx.operator.id);
+      if (!manager) return;
+      manager.handleQSOComplete();
+    },
+
+    onQSOFail(_info, ctx) {
+      const manager = managers.get(ctx.operator.id);
+      if (!manager) return;
+      manager.handleQSOFail();
     },
 
     onAutoCallCandidate(_slotInfo, _messages, ctx: PluginContext) {
@@ -242,6 +181,9 @@ export const cqRotationPlugin: PluginDefinition = {
       }
       if (changes.mode !== undefined) {
         manager.updateMode(changes.mode as string);
+      }
+      if (changes.operatorCallsigns !== undefined) {
+        manager.updateOperatorList(changes.operatorCallsigns as string[]);
       }
       if (changes.enabled !== undefined) {
         if (changes.enabled) {

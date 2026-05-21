@@ -5,16 +5,15 @@ import {
   COORDINATOR_HEARTBEAT_INTERVAL,
   COORDINATOR_HEARTBEAT_TIMEOUT,
   OPERATOR_CHECK_INTERVAL,
-  ROTATION_TICK_INTERVAL,
 } from './types.js';
 
 const TIMER_HEARTBEAT = 'coordinator-heartbeat';
 const TIMER_OPERATOR_CHECK = 'operator-check';
-const TIMER_ROTATION_TICK = 'rotation-tick';
 
 export class RotationManager {
   private ctx: PluginContext;
   private isCoordinator = false;
+  private lastBroadcastState = '';
 
   constructor(ctx: PluginContext) {
     this.ctx = ctx;
@@ -35,7 +34,7 @@ export class RotationManager {
     const state = this.getState();
     if (state.isRunning) return;
 
-    const callsigns = this.buildOperatorCallsignList();
+    const callsigns = (this.ctx.config.operatorCallsigns as string[]) || [];
     if (callsigns.length < 2) {
       this.ctx.log.warn('Need at least 2 operators for CQ rotation');
       return;
@@ -61,20 +60,16 @@ export class RotationManager {
       coveredIndices,
       coordinatorOperatorId: this.isCoordinator ? this.ctx.operator.id : state.coordinatorOperatorId,
       coordinatorHeartbeat: Date.now(),
+      failCount: 0,
+      waitingForQSO: false,
     };
 
     this.setState(newState);
-
-    if (this.isCoordinator) {
-      this.ctx.timers.set(TIMER_ROTATION_TICK, ROTATION_TICK_INTERVAL);
-    }
-
     this.ctx.log.info('CQ rotation started', {
       operators: orderedCallsigns,
       mode,
       intervalSeconds,
     });
-
     this.broadcastState();
   }
 
@@ -85,11 +80,9 @@ export class RotationManager {
     this.setState({
       isRunning: false,
       lastSwitchTimestamp: 0,
+      failCount: 0,
+      waitingForQSO: false,
     });
-
-    if (this.isCoordinator) {
-      this.ctx.timers.clear(TIMER_ROTATION_TICK);
-    }
 
     if (this.ctx.operator.isTransmitting) {
       this.ctx.operator.stopTransmitting();
@@ -107,43 +100,39 @@ export class RotationManager {
     this.setState({
       currentIndex: nextIndex,
       lastSwitchTimestamp: Date.now(),
+      failCount: 0,
+      waitingForQSO: false,
     });
 
     this.ctx.log.info('Skipped to next operator', {
       nextCallsign: state.operatorCallsigns[nextIndex],
     });
-
     this.broadcastState();
   }
 
-  shuffleOrder(): void {
+  updateOperatorList(callsigns: string[]): void {
     const state = this.getState();
     if (!state.isRunning) return;
 
-    const shuffled = this.shuffleArray([...state.operatorCallsigns]);
+    if (callsigns.length < 2) {
+      this.ctx.log.warn('Operator list too short, stopping rotation');
+      this.stop();
+      return;
+    }
+
+    let orderedCallsigns = [...callsigns];
+    if (state.mode === 'random') {
+      orderedCallsigns = this.shuffleArray([...callsigns]);
+    }
+
     this.setState({
-      operatorCallsigns: shuffled,
+      operatorCallsigns: orderedCallsigns,
       currentIndex: 0,
       lastSwitchTimestamp: Date.now(),
       coveredIndices: state.mode === 'random' ? [0] : [],
     });
 
-    this.ctx.log.info('Operator order shuffled', { newOrder: shuffled });
-    this.broadcastState();
-  }
-
-  setOrder(callsigns: string[]): void {
-    const state = this.getState();
-    if (!state.isRunning) return;
-
-    this.setState({
-      operatorCallsigns: callsigns,
-      currentIndex: 0,
-      lastSwitchTimestamp: Date.now(),
-      coveredIndices: [],
-    });
-
-    this.ctx.log.info('Operator order set manually', { order: callsigns });
+    this.ctx.log.info('Operator list updated', { operators: orderedCallsigns });
     this.broadcastState();
   }
 
@@ -155,34 +144,13 @@ export class RotationManager {
     }
   }
 
-  handleRotationTick(): void {
-    if (!this.isCoordinator) return;
-
-    const state = this.getState();
-    if (!state.isRunning) return;
-
-    const elapsed = Date.now() - state.lastSwitchTimestamp;
-    if (elapsed < state.intervalMs) return;
-
-    const nextIndex = this.computeNextIndex(state);
-    this.setState({
-      currentIndex: nextIndex,
-      lastSwitchTimestamp: Date.now(),
-    });
-
-    this.ctx.log.info('Rotation tick: switched to operator', {
-      nextCallsign: state.operatorCallsigns[nextIndex],
-      nextIndex,
-    });
-
-    this.broadcastState();
-  }
-
   handleOperatorCheck(): void {
     const state = this.getState();
     if (!state.isRunning) return;
-
     if (state.operatorCallsigns.length === 0) return;
+
+    // Broadcast state to this instance's own panels (Fix #1: sync across all operators)
+    this.broadcastState();
 
     const myCallsign = this.ctx.operator.callsign;
     const activeCallsign = state.operatorCallsigns[state.currentIndex];
@@ -194,6 +162,92 @@ export class RotationManager {
     } else if (!isMyTurn && this.ctx.operator.isTransmitting) {
       this.ctx.operator.stopTransmitting();
       this.ctx.log.debug('Stopped transmitting (not my turn)', { callsign: myCallsign });
+    }
+  }
+
+  /**
+   * Called on every FT8 slot start. Uses slot-aligned timing for rotation.
+   * (Fix #2: align with FT8 timing)
+   */
+  handleSlotStart(slotStartMs: number): void {
+    if (!this.isCoordinator) return;
+
+    const state = this.getState();
+    if (!state.isRunning) return;
+
+    // If waiting for QSO to complete, don't rotate
+    if (state.waitingForQSO) {
+      this.ctx.log.debug('Waiting for QSO to complete before rotating');
+      return;
+    }
+
+    const elapsed = slotStartMs - state.lastSwitchTimestamp;
+    if (elapsed < state.intervalMs) return;
+
+    // Time is up — check if current operator is mid-QSO
+    const currentCallsign = state.operatorCallsigns[state.currentIndex];
+    const isCurrentOperator = this.ctx.operator.callsign === currentCallsign;
+
+    if (isCurrentOperator && this.ctx.operator.automation) {
+      const currentState = this.ctx.operator.automation.currentState;
+      // If not in TX6 (idle/CQ), operator is mid-QSO
+      if (currentState && currentState !== 'TX6') {
+        this.setState({ waitingForQSO: true });
+        this.ctx.log.info('Rotation time up but operator mid-QSO, waiting', {
+          callsign: currentCallsign,
+          state: currentState,
+        });
+        this.broadcastState();
+        return;
+      }
+    }
+
+    this.rotateToNext(slotStartMs);
+  }
+
+  /**
+   * Called when a QSO completes. Reset fail count.
+   * If we were waiting for QSO, rotate now.
+   * (Fix #3)
+   */
+  handleQSOComplete(): void {
+    const state = this.getState();
+    if (!state.isRunning) return;
+
+    this.setState({ failCount: 0 });
+
+    if (state.waitingForQSO) {
+      this.ctx.log.info('QSO completed, proceeding with rotation');
+      this.setState({ waitingForQSO: false });
+      if (this.isCoordinator) {
+        this.rotateToNext(Date.now());
+      }
+    }
+  }
+
+  /**
+   * Called when a QSO fails. Increment fail count.
+   * If fail count reaches 2, force rotate.
+   * (Fix #3)
+   */
+  handleQSOFail(): void {
+    const state = this.getState();
+    if (!state.isRunning) return;
+
+    const newFailCount = state.failCount + 1;
+    this.setState({ failCount: newFailCount });
+
+    this.ctx.log.info('QSO failed', { failCount: newFailCount });
+
+    if (newFailCount >= 2) {
+      this.ctx.log.warn('Two consecutive QSO failures, forcing rotation');
+      this.setState({ failCount: 0, waitingForQSO: false });
+      if (this.isCoordinator) {
+        this.rotateToNext(Date.now());
+      }
+    } else if (state.waitingForQSO) {
+      // First fail while waiting — keep waiting for the second attempt
+      this.ctx.log.info('First fail while waiting, will retry once more');
     }
   }
 
@@ -213,7 +267,6 @@ export class RotationManager {
   cleanup(): void {
     this.ctx.timers.clear(TIMER_HEARTBEAT);
     this.ctx.timers.clear(TIMER_OPERATOR_CHECK);
-    this.ctx.timers.clear(TIMER_ROTATION_TICK);
 
     if (this.isCoordinator) {
       const state = this.getState();
@@ -244,6 +297,25 @@ export class RotationManager {
     this.broadcastState();
   }
 
+  // ─── Private ───
+
+  private rotateToNext(slotStartMs: number): void {
+    const state = this.getState();
+    const nextIndex = this.computeNextIndex(state);
+    this.setState({
+      currentIndex: nextIndex,
+      lastSwitchTimestamp: slotStartMs,
+      failCount: 0,
+      waitingForQSO: false,
+    });
+
+    this.ctx.log.info('Rotation switched to operator', {
+      nextCallsign: state.operatorCallsigns[nextIndex],
+      nextIndex,
+    });
+    this.broadcastState();
+  }
+
   private getState(): RotationState {
     return this.ctx.store.global.get<RotationState>('rotationState', DEFAULT_ROTATION_STATE);
   }
@@ -267,21 +339,10 @@ export class RotationManager {
         coordinatorHeartbeat: now,
       });
       this.ctx.log.info('Claimed coordinator role');
-
-      if (state.isRunning) {
-        this.ctx.timers.set(TIMER_ROTATION_TICK, ROTATION_TICK_INTERVAL);
-      }
     } else if (state.coordinatorOperatorId === this.ctx.operator.id) {
       this.isCoordinator = true;
       this.setState({ coordinatorHeartbeat: now });
     }
-  }
-
-  private buildOperatorCallsignList(): string[] {
-    const others = this.ctx.operator.getOtherOperators();
-    const myCallsign = this.ctx.operator.callsign;
-    const allCallsigns = [myCallsign, ...others.map((o) => o.callsign)];
-    return [...new Set(allCallsigns)];
   }
 
   private computeNextIndex(state: RotationState): number {
@@ -323,8 +384,9 @@ export class RotationManager {
 
   private broadcastState(): void {
     const fullState = this.getFullState();
-    for (const session of this.ctx.ui.listActivePageSessions('rotation-panel')) {
-      this.ctx.ui.pushToSession(session.sessionId, 'stateUpdate', fullState);
-    }
+    const stateKey = JSON.stringify(fullState);
+    if (stateKey === this.lastBroadcastState) return;
+    this.lastBroadcastState = stateKey;
+    // State is already in ctx.store.global via setState()
   }
 }

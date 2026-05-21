@@ -23,6 +23,10 @@ export interface RotationState {
   coordinatorOperatorId: string;
   /** Heartbeat timestamp (ms) of the coordinator. */
   coordinatorHeartbeat: number;
+  /** Number of consecutive QSO failures (triggers forced rotation at 2). */
+  failCount: number;
+  /** Whether we're waiting for the current QSO to complete before rotating. */
+  waitingForQSO: boolean;
 }
 
 export const DEFAULT_ROTATION_STATE: RotationState = {
@@ -35,9 +39,10 @@ export const DEFAULT_ROTATION_STATE: RotationState = {
   coveredIndices: [],
   coordinatorOperatorId: '',
   coordinatorHeartbeat: 0,
+  failCount: 0,
+  waitingForQSO: false,
 };
 
 export const COORDINATOR_HEARTBEAT_INTERVAL = 5000;
 export const COORDINATOR_HEARTBEAT_TIMEOUT = 10000;
 export const OPERATOR_CHECK_INTERVAL = 2000;
-export const ROTATION_TICK_INTERVAL = 1000;
