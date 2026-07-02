@@ -1,0 +1,65 @@
+{
+  "name": "tx5dr-plugin-operator-live-chat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build --config ui/vite.config.ts",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "dev:server": "tsc --watch",
+    "dev:ui": "vite build --watch --config ui/vite.config.ts",
+    "link": "node scripts/link.mjs"
+  },
+  "tx5drPlugin": {
+    "pluginName": "operator-live-chat",
+    "title": "Operator Live Chat",
+    "description": "Real-time shared chat for TX-5DR operator and admin accounts.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/operator-live-chat",
+    "categories": [
+      "communication",
+      "ui",
+      "utility"
+    ],
+    "keywords": [
+      "chat",
+      "toolbar",
+      "realtime",
+      "operator"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      },
+      {
+        "from": "dist/ui",
+        "to": "ui"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.7.8",
+    "@types/node": "^22.15.21",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.0.0",
+    "vite": "^6.3.4"
+  }
+}
