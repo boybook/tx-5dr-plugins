@@ -1,4 +1,5 @@
 {
+  "pluginName": "OP 实时聊天",
   "pluginDescription": "为操作员和管理员账号提供共享的实时工具栏聊天。",
   "toolbarTitle": "OP 聊天",
   "toolbarActiveTitle": "OP 聊天（有新动态）",

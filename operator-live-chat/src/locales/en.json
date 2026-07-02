@@ -1,4 +1,5 @@
 {
+  "pluginName": "Operator Live Chat",
   "pluginDescription": "Shared real-time toolbar chat for operator and admin accounts.",
   "toolbarTitle": "Operator Chat",
   "toolbarActiveTitle": "Operator Chat (new activity)",
