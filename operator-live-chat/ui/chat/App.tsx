@@ -74,7 +74,16 @@ export function App() {
   useAutoResize();
 
   const acknowledgeActivity = useCallback(() => {
-    void window.tx5dr.invoke('ackActivity').catch(() => {});
+    void window.tx5dr.invoke('ackActivity')
+      .then((result) => {
+        const nextSnapshot = result as ChatSnapshot;
+        setSnapshot(nextSnapshot);
+      })
+      .catch(() => {});
+  }, []);
+
+  const isPageVisible = useCallback(() => {
+    return document.visibilityState === 'visible';
   }, []);
 
   const applyBootstrap = useCallback((result: BootstrapResult) => {
@@ -112,14 +121,29 @@ export function App() {
   useEffect(() => {
     const handleSnapshot = (nextSnapshot: ChatSnapshot) => {
       setSnapshot(nextSnapshot);
+      if (nextSnapshot.activity.active && isPageVisible()) {
+        acknowledgeActivity();
+      }
     };
 
     window.tx5dr.onPush('chatState', handleSnapshot);
+    const handleFocus = () => {
+      acknowledgeActivity();
+    };
+    const handleVisibilityChange = () => {
+      if (isPageVisible()) {
+        acknowledgeActivity();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.tx5dr.offPush('chatState', handleSnapshot);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [acknowledgeActivity, isPageVisible]);
 
   useEffect(() => {
     const element = timelineRef.current;
@@ -145,13 +169,14 @@ export function App() {
       }) as BootstrapResult;
       applyBootstrap(result);
       setDraft('');
+      acknowledgeActivity();
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('loadError', 'Failed to load chat.');
       setError(message);
     } finally {
       setSending(false);
     }
-  }, [applyBootstrap, currentUser, draft, sending]);
+  }, [acknowledgeActivity, applyBootstrap, currentUser, draft, sending]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

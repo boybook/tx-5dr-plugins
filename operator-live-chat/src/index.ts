@@ -130,7 +130,10 @@ class OperatorLiveChatService {
 
   private enqueue<T>(task: () => Promise<T> | T): Promise<T> {
     const nextTask = this.queue.then(() => task());
-    this.queue = nextTask.catch(() => undefined);
+    this.queue = nextTask.catch((error) => {
+      this.ctx.log.error('operator_live_chat_queue_task_failed', error);
+      return undefined;
+    });
     return nextTask;
   }
 
@@ -257,7 +260,9 @@ class OperatorLiveChatService {
     this.ctx.timers.clear(ACTIVITY_TIMER_ID);
     await this.persistState(nextState);
     this.renderToolbar(false);
-    return this.toSnapshot(nextState);
+    const snapshot = this.toSnapshot(nextState);
+    this.pushSnapshot(snapshot);
+    return snapshot;
   }
 }
 

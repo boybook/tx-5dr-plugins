@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  acknowledgeActivity,
   appendMessage,
   coerceChatState,
   createEmptyChatState,
   MAX_MESSAGES,
   normalizeMessageText,
+  shouldExpireActivity,
   upsertProfile,
 } from '../dist/chat-state.js';
 
@@ -89,4 +91,49 @@ test('coerceChatState drops malformed persisted data', () => {
     role: 'operator',
     lastSeenAt: '2025-01-01T00:00:00.000Z',
   });
+});
+
+test('acknowledgeActivity clears active state only when needed', () => {
+  const activeState = {
+    ...createEmptyChatState(),
+    activity: {
+      active: true,
+      lastMessageId: 'msg-1',
+      lastMessageAt: '2025-01-01T00:00:00.000Z',
+    },
+  };
+  const acknowledged = acknowledgeActivity(activeState);
+  assert.equal(acknowledged.activity.active, false);
+  assert.equal(acknowledged.activity.lastMessageId, 'msg-1');
+
+  const idleState = createEmptyChatState();
+  assert.equal(acknowledgeActivity(idleState), idleState);
+});
+
+test('shouldExpireActivity respects the activity window boundary', () => {
+  const activity = {
+    active: true,
+    lastMessageId: 'msg-1',
+    lastMessageAt: '2025-01-01T00:00:00.000Z',
+  };
+
+  assert.equal(
+    shouldExpireActivity(activity, Date.parse('2025-01-01T00:00:19.999Z'), 20_000),
+    false,
+  );
+  assert.equal(
+    shouldExpireActivity(activity, Date.parse('2025-01-01T00:00:20.000Z'), 20_000),
+    true,
+  );
+});
+
+test('shouldExpireActivity expires invalid timestamps', () => {
+  assert.equal(
+    shouldExpireActivity({
+      active: true,
+      lastMessageId: 'msg-1',
+      lastMessageAt: 'not-a-date',
+    }, Date.now()),
+    true,
+  );
 });
