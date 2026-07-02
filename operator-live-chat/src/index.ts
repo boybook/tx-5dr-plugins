@@ -52,6 +52,10 @@ interface BootstrapResult extends ChatSnapshotPayload {
   };
 }
 
+interface ToolbarTonePanelMeta {
+  tone: 'default' | 'warning';
+}
+
 function toChatRole(role: PluginUIRequestContext['user']['role']): SupportedUserRole {
   return role === 'admin' ? 'admin' : 'operator';
 }
@@ -67,6 +71,10 @@ function buildToolbarPanel(active: boolean): PluginPanelDescriptor {
     openMode: 'popover',
     uiSize: 'lg',
   };
+}
+
+function buildToolbarTone(active: boolean): 'default' | 'warning' {
+  return active ? 'warning' : 'default';
 }
 
 class OperatorLiveChatService {
@@ -150,6 +158,11 @@ class OperatorLiveChatService {
 
   private renderToolbar(active: boolean): void {
     this.ctx.ui.setPanelContributions(TOOLBAR_GROUP_ID, [buildToolbarPanel(active)]);
+    (this.ctx.ui as typeof this.ctx.ui & {
+      setPanelMeta(panelId: string, meta: ToolbarTonePanelMeta): void;
+    }).setPanelMeta(PANEL_ID, {
+      tone: buildToolbarTone(active),
+    });
   }
 
   private pushSnapshot(snapshot: ChatSnapshotPayload): void {
