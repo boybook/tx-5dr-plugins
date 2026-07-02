@@ -112,28 +112,14 @@ export function App() {
   useEffect(() => {
     const handleSnapshot = (nextSnapshot: ChatSnapshot) => {
       setSnapshot(nextSnapshot);
-      if (document.visibilityState === 'visible') {
-        acknowledgeActivity();
-      }
-    };
-
-    const handleWindowFocus = () => acknowledgeActivity();
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        acknowledgeActivity();
-      }
     };
 
     window.tx5dr.onPush('chatState', handleSnapshot);
-    window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       window.tx5dr.offPush('chatState', handleSnapshot);
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [acknowledgeActivity]);
+  }, []);
 
   useEffect(() => {
     const element = timelineRef.current;
@@ -159,14 +145,13 @@ export function App() {
       }) as BootstrapResult;
       applyBootstrap(result);
       setDraft('');
-      acknowledgeActivity();
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('loadError', 'Failed to load chat.');
       setError(message);
     } finally {
       setSending(false);
     }
-  }, [acknowledgeActivity, applyBootstrap, currentUser, draft, sending]);
+  }, [applyBootstrap, currentUser, draft, sending]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
