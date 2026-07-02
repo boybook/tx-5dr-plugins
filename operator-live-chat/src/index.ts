@@ -53,7 +53,7 @@ interface BootstrapResult extends ChatSnapshotPayload {
 }
 
 interface ToolbarTonePanelMeta {
-  tone: 'default' | 'warning';
+  tone: 'default' | 'danger';
 }
 
 function toChatRole(role: PluginUIRequestContext['user']['role']): SupportedUserRole {
@@ -73,8 +73,8 @@ function buildToolbarPanel(active: boolean): PluginPanelDescriptor {
   };
 }
 
-function buildToolbarTone(active: boolean): 'default' | 'warning' {
-  return active ? 'warning' : 'default';
+function buildToolbarTone(active: boolean): 'default' | 'danger' {
+  return active ? 'danger' : 'default';
 }
 
 class OperatorLiveChatService {
