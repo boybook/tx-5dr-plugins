@@ -1,9 +1,9 @@
 {
   "pluginName": "OP 实时聊天",
   "pluginDescription": "为操作员和管理员账号提供共享的实时工具栏聊天。",
-  "toolbarTitle": "OP聊天",
-  "toolbarActiveTitle": "OP聊天（有新动态）",
-  "pageTitle": "OP聊天",
+  "toolbarTitle": "OP 聊天",
+  "toolbarActiveTitle": "OP 聊天（有新动态）",
+  "pageTitle": "OP 聊天",
   "headerTitle": "OP 实时聊天",
   "headerSubtitle": "当前在线操作员与管理员共享的协调频道",
   "statusSyncing": "同步中",
