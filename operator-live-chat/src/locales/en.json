@@ -1,9 +1,9 @@
 {
   "pluginName": "Operator Live Chat",
   "pluginDescription": "Shared real-time toolbar chat for operator and admin accounts.",
-  "toolbarTitle": "Operator Chat",
-  "toolbarActiveTitle": "Operator Chat (new activity)",
-  "pageTitle": "Operator Chat",
+  "toolbarTitle": "OP Chat",
+  "toolbarActiveTitle": "OP Chat (new activity)",
+  "pageTitle": "OP Chat",
   "headerTitle": "Operator Chat",
   "headerSubtitle": "Shared room for active operator and admin accounts",
   "statusSyncing": "Syncing",

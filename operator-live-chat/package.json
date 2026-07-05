@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build --config ui/vite.config.ts",
+    "build": "tsc && node scripts/copy-locales.mjs && vite build --config ui/vite.config.ts",
     "test": "npm run build && node --test test/*.test.mjs",
     "dev:server": "tsc --watch",
     "dev:ui": "vite build --watch --config ui/vite.config.ts",
