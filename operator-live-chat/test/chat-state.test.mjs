@@ -4,7 +4,9 @@ import {
   acknowledgeActivity,
   appendMessage,
   coerceChatState,
+  createChatSnapshot,
   createEmptyChatState,
+  hasUnreadActivity,
   MAX_MESSAGES,
   normalizeMessageText,
   upsertProfile,
@@ -80,6 +82,10 @@ test('coerceChatState drops malformed persisted data', () => {
       lastMessageId: 'ok',
       lastMessageAt: '2025-01-01T00:00:00.000Z',
     },
+    reads: {
+      broken: null,
+      'token-2': 'ok',
+    },
   });
 
   assert.equal(state.messages.length, 1);
@@ -90,9 +96,12 @@ test('coerceChatState drops malformed persisted data', () => {
     role: 'operator',
     lastSeenAt: '2025-01-01T00:00:00.000Z',
   });
+  assert.deepEqual(state.reads, {
+    'token-2': 'ok',
+  });
 });
 
-test('acknowledgeActivity clears active state only when needed', () => {
+test('acknowledgeActivity records the last read message per token', () => {
   const activeState = {
     ...createEmptyChatState(),
     activity: {
@@ -101,11 +110,28 @@ test('acknowledgeActivity clears active state only when needed', () => {
       lastMessageAt: '2025-01-01T00:00:00.000Z',
     },
   };
-  const acknowledged = acknowledgeActivity(activeState);
-  assert.equal(acknowledged.activity.active, false);
+  const acknowledged = acknowledgeActivity(activeState, 'token-1');
+  assert.equal(acknowledged.reads['token-1'], 'msg-1');
   assert.equal(acknowledged.activity.lastMessageId, 'msg-1');
 
   const idleState = createEmptyChatState();
-  assert.equal(acknowledgeActivity(idleState), idleState);
+  assert.equal(acknowledgeActivity(idleState, 'token-1'), idleState);
 });
 
+test('sender sees the new message as read while other users keep unread activity', () => {
+  let state = createEmptyChatState();
+  state = appendMessage(state, {
+    id: 'msg-1',
+    tokenId: 'token-a',
+    senderLabel: 'Alpha',
+    role: 'operator',
+    text: 'hello',
+    createdAt: '2025-01-01T00:00:00.000Z',
+  }).state;
+  state = acknowledgeActivity(state, 'token-a');
+
+  assert.equal(hasUnreadActivity(state, 'token-a'), false);
+  assert.equal(hasUnreadActivity(state, 'token-b'), true);
+  assert.equal(createChatSnapshot(state, 'token-a').activity.active, false);
+  assert.equal(createChatSnapshot(state, 'token-b').activity.active, true);
+});

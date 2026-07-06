@@ -9,10 +9,13 @@ import {
   acknowledgeActivity,
   appendMessage,
   coerceChatState,
+  createChatSnapshot,
   createEmptyChatState,
+  hasUnreadActivity,
   normalizeSenderLabel,
   normalizeMessageText,
   type ChatRole,
+  type ChatSnapshot,
   type ChatState,
   upsertProfile,
 } from './chat-state.js';
@@ -24,6 +27,7 @@ const PANEL_ID = 'chat-toolbar';
 const STORE_KEY_MESSAGES = 'messages';
 const STORE_KEY_PROFILES = 'profiles';
 const STORE_KEY_ACTIVITY = 'activity';
+const STORE_KEY_READS = 'reads';
 
 type SupportedUserRole = 'operator' | 'admin';
 
@@ -36,10 +40,7 @@ interface SendMessagePayload {
   label?: unknown;
 }
 
-interface ChatSnapshotPayload {
-  messages: ChatState['messages'];
-  activity: ChatState['activity'];
-}
+interface ChatSnapshotPayload extends ChatSnapshot {}
 
 interface BootstrapResult extends ChatSnapshotPayload {
   currentUser: {
@@ -49,22 +50,23 @@ interface BootstrapResult extends ChatSnapshotPayload {
   };
 }
 
-interface ToolbarTonePanelMeta {
-  tone: 'default' | 'danger';
+interface UserScopedPanelMetaBridge {
+  setPanelMeta(panelId: string, meta: { tone: 'default' | 'danger' }): void;
+  setPanelMetaForUser(panelId: string, tokenId: string, meta: { tone: 'default' | 'danger' }): void;
 }
 
 function toChatRole(role: PluginUIRequestContext['user']['role']): SupportedUserRole {
   return role === 'admin' ? 'admin' : 'operator';
 }
 
-function buildToolbarPanel(active: boolean): PluginPanelDescriptor {
+function buildToolbarPanel(): PluginPanelDescriptor {
   return {
     id: PANEL_ID,
-    title: active ? 'toolbarActiveTitle' : 'toolbarTitle',
+    title: 'toolbarTitle',
     component: 'iframe',
     pageId: PAGE_ID,
     slot: 'radio-control-toolbar',
-    icon: active ? 'comment-dots' : 'comments',
+    icon: 'comments',
     openMode: 'popover',
     uiSize: 'lg',
   };
@@ -76,6 +78,7 @@ function buildToolbarTone(active: boolean): 'default' | 'danger' {
 
 class OperatorLiveChatService {
   private queue: Promise<unknown> = Promise.resolve();
+  private readonly sessionUsers = new Map<string, string>();
 
   constructor(private readonly ctx: PluginContext) {}
 
@@ -92,18 +95,19 @@ class OperatorLiveChatService {
           case 'sendMessage':
             return this.enqueue(() => this.handleSendMessage(data as SendMessagePayload | undefined, requestContext));
           case 'ackActivity':
-            return this.enqueue(() => this.handleAckActivity());
+            return this.enqueue(() => this.handleAckActivity(requestContext));
           default:
             throw new Error(`unknown_action:${action}`);
         }
       },
     });
 
-    this.renderToolbar(this.readState().activity.active);
+    this.renderGlobalToolbar(this.hasGlobalUnread(this.readState()));
   }
 
   unload(): void {
     this.ctx.ui.clearPanelContributions(TOOLBAR_GROUP_ID);
+    this.sessionUsers.clear();
   }
 
   private enqueue<T>(task: () => Promise<T> | T): Promise<T> {
@@ -120,6 +124,7 @@ class OperatorLiveChatService {
       messages: this.ctx.store.global.get(STORE_KEY_MESSAGES, createEmptyChatState().messages),
       profiles: this.ctx.store.global.get(STORE_KEY_PROFILES, createEmptyChatState().profiles),
       activity: this.ctx.store.global.get(STORE_KEY_ACTIVITY, createEmptyChatState().activity),
+      reads: this.ctx.store.global.get(STORE_KEY_READS, createEmptyChatState().reads),
     });
   }
 
@@ -127,28 +132,56 @@ class OperatorLiveChatService {
     this.ctx.store.global.set(STORE_KEY_MESSAGES, state.messages);
     this.ctx.store.global.set(STORE_KEY_PROFILES, state.profiles);
     this.ctx.store.global.set(STORE_KEY_ACTIVITY, state.activity);
+    this.ctx.store.global.set(STORE_KEY_READS, state.reads);
     await this.ctx.store.global.flush();
   }
 
-  private toSnapshot(state: ChatState): ChatSnapshotPayload {
-    return {
-      messages: state.messages,
-      activity: state.activity,
-    };
+  private hasGlobalUnread(state: ChatState): boolean {
+    return state.activity.lastMessageId !== null;
   }
 
-  private renderToolbar(active: boolean): void {
-    this.ctx.ui.setPanelContributions(TOOLBAR_GROUP_ID, [buildToolbarPanel(active)]);
-    (this.ctx.ui as typeof this.ctx.ui & {
-      setPanelMeta(panelId: string, meta: ToolbarTonePanelMeta): void;
-    }).setPanelMeta(PANEL_ID, {
+  private toSnapshotForUser(state: ChatState, tokenId: string): ChatSnapshotPayload {
+    return createChatSnapshot(state, tokenId);
+  }
+
+  private renderGlobalToolbar(active: boolean): void {
+    this.ctx.ui.setPanelContributions(TOOLBAR_GROUP_ID, [buildToolbarPanel()]);
+    (this.ctx.ui as typeof this.ctx.ui & UserScopedPanelMetaBridge).setPanelMeta(PANEL_ID, {
       tone: buildToolbarTone(active),
     });
   }
 
-  private pushSnapshot(snapshot: ChatSnapshotPayload): void {
+  private renderToolbarForUser(state: ChatState, tokenId: string): void {
+    (this.ctx.ui as typeof this.ctx.ui & UserScopedPanelMetaBridge).setPanelMetaForUser(PANEL_ID, tokenId, {
+      tone: buildToolbarTone(hasUnreadActivity(state, tokenId)),
+    });
+  }
+
+  private pruneSessionUsers(): void {
+    const activeSessionIds = new Set(
+      this.ctx.ui.listActivePageSessions(PAGE_ID).map((session) => session.sessionId),
+    );
+    for (const sessionId of this.sessionUsers.keys()) {
+      if (!activeSessionIds.has(sessionId)) {
+        this.sessionUsers.delete(sessionId);
+      }
+    }
+  }
+
+  private pushSnapshots(state: ChatState): void {
+    this.pruneSessionUsers();
+
+    const renderedUsers = new Set<string>();
     for (const session of this.ctx.ui.listActivePageSessions(PAGE_ID)) {
-      this.ctx.ui.pushToSession(session.sessionId, 'chatState', snapshot);
+      const tokenId = this.sessionUsers.get(session.sessionId);
+      if (!tokenId) {
+        continue;
+      }
+      if (!renderedUsers.has(tokenId)) {
+        this.renderToolbarForUser(state, tokenId);
+        renderedUsers.add(tokenId);
+      }
+      this.ctx.ui.pushToSession(session.sessionId, 'chatState', this.toSnapshotForUser(state, tokenId));
     }
   }
 
@@ -163,17 +196,23 @@ class OperatorLiveChatService {
       currentState.profiles[requestContext.user.tokenId]?.label ?? requestContext.user.tokenId,
     );
 
-    const nextState = upsertProfile(currentState, {
+    this.sessionUsers.set(requestContext.pageSessionId, requestContext.user.tokenId);
+
+    const profiledState = upsertProfile(currentState, {
       tokenId: requestContext.user.tokenId,
       label,
       role,
       lastSeenAt: new Date().toISOString(),
     });
+    const nextState = acknowledgeActivity(profiledState, requestContext.user.tokenId);
 
     await this.persistState(nextState);
+    this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
+    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
+    this.pushSnapshots(nextState);
 
     return {
-      ...this.toSnapshot(nextState),
+      ...this.toSnapshotForUser(nextState, requestContext.user.tokenId),
       currentUser: {
         tokenId: requestContext.user.tokenId,
         label,
@@ -195,6 +234,8 @@ class OperatorLiveChatService {
     );
     const now = new Date().toISOString();
 
+    this.sessionUsers.set(requestContext.pageSessionId, requestContext.user.tokenId);
+
     const profiledState = upsertProfile(currentState, {
       tokenId: requestContext.user.tokenId,
       label,
@@ -202,23 +243,23 @@ class OperatorLiveChatService {
       lastSeenAt: now,
     });
 
-    const { state: nextState } = appendMessage(profiledState, {
+    const appendedState = appendMessage(profiledState, {
       id: randomUUID(),
       tokenId: requestContext.user.tokenId,
       senderLabel: label,
       role: role as ChatRole,
       text,
       createdAt: now,
-    });
+    }).state;
+    const nextState = acknowledgeActivity(appendedState, requestContext.user.tokenId);
 
     await this.persistState(nextState);
-    this.renderToolbar(true);
-
-    const snapshot = this.toSnapshot(nextState);
-    this.pushSnapshot(snapshot);
+    this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
+    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
+    this.pushSnapshots(nextState);
 
     return {
-      ...snapshot,
+      ...this.toSnapshotForUser(nextState, requestContext.user.tokenId),
       currentUser: {
         tokenId: requestContext.user.tokenId,
         label,
@@ -227,18 +268,21 @@ class OperatorLiveChatService {
     };
   }
 
-  private async handleAckActivity(): Promise<ChatSnapshotPayload> {
+  private async handleAckActivity(
+    requestContext: PluginUIRequestContext,
+  ): Promise<ChatSnapshotPayload> {
     const currentState = this.readState();
-    const nextState = acknowledgeActivity(currentState);
-    if (nextState === currentState) {
-      return this.toSnapshot(currentState);
+    this.sessionUsers.set(requestContext.pageSessionId, requestContext.user.tokenId);
+
+    const nextState = acknowledgeActivity(currentState, requestContext.user.tokenId);
+    if (nextState !== currentState) {
+      await this.persistState(nextState);
     }
 
-    await this.persistState(nextState);
-    this.renderToolbar(false);
-    const snapshot = this.toSnapshot(nextState);
-    this.pushSnapshot(snapshot);
-    return snapshot;
+    this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
+    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
+    this.pushSnapshots(nextState);
+    return this.toSnapshotForUser(nextState, requestContext.user.tokenId);
   }
 }
 

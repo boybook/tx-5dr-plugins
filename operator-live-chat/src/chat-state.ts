@@ -25,10 +25,16 @@ export interface ChatActivity {
   lastMessageAt: string | null;
 }
 
+export interface ChatSnapshot {
+  messages: ChatMessage[];
+  activity: ChatActivity;
+}
+
 export interface ChatState {
   messages: ChatMessage[];
   profiles: Record<string, ChatProfile>;
   activity: ChatActivity;
+  reads: Record<string, string>;
 }
 
 interface AppendMessageInput {
@@ -68,6 +74,7 @@ export function createEmptyChatState(): ChatState {
       lastMessageId: null,
       lastMessageAt: null,
     },
+    reads: {},
   };
 }
 
@@ -105,6 +112,7 @@ export function coerceChatState(input: {
   messages?: unknown;
   profiles?: unknown;
   activity?: unknown;
+  reads?: unknown;
 } | null | undefined): ChatState {
   const fallback = createEmptyChatState();
   if (!input || typeof input !== 'object') {
@@ -169,6 +177,19 @@ export function coerceChatState(input: {
   const lastMessageId = coerceString(rawActivity.lastMessageId);
   const lastMessageAt = coerceString(rawActivity.lastMessageAt);
 
+  const rawReads = input.reads && typeof input.reads === 'object'
+    ? input.reads as Record<string, unknown>
+    : {};
+  const reads = Object.fromEntries(
+    Object.entries(rawReads).flatMap(([tokenId, entry]) => {
+      const lastReadMessageId = coerceString(entry);
+      if (!lastReadMessageId) {
+        return [];
+      }
+      return [[tokenId, lastReadMessageId]];
+    }),
+  );
+
   return {
     messages,
     profiles,
@@ -177,6 +198,7 @@ export function coerceChatState(input: {
       lastMessageId,
       lastMessageAt,
     },
+    reads,
   };
 }
 
@@ -225,17 +247,31 @@ export function appendMessage(state: ChatState, input: AppendMessageInput): {
   };
 }
 
-export function acknowledgeActivity(state: ChatState): ChatState {
-  if (!state.activity.active) {
+export function hasUnreadActivity(state: ChatState, tokenId: string): boolean {
+  return state.activity.lastMessageId !== null && state.reads[tokenId] !== state.activity.lastMessageId;
+}
+
+export function createChatSnapshot(state: ChatState, tokenId: string): ChatSnapshot {
+  return {
+    messages: state.messages,
+    activity: {
+      active: hasUnreadActivity(state, tokenId),
+      lastMessageId: state.activity.lastMessageId,
+      lastMessageAt: state.activity.lastMessageAt,
+    },
+  };
+}
+
+export function acknowledgeActivity(state: ChatState, tokenId: string): ChatState {
+  if (!state.activity.lastMessageId || state.reads[tokenId] === state.activity.lastMessageId) {
     return state;
   }
 
   return {
     ...state,
-    activity: {
-      ...state.activity,
-      active: false,
+    reads: {
+      ...state.reads,
+      [tokenId]: state.activity.lastMessageId,
     },
   };
 }
-
