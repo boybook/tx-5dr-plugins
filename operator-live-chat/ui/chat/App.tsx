@@ -82,10 +82,6 @@ export function App() {
       .catch(() => {});
   }, []);
 
-  const isPageVisible = useCallback(() => {
-    return document.visibilityState === 'visible';
-  }, []);
-
   const applyBootstrap = useCallback((result: BootstrapResult) => {
     setSnapshot({
       messages: result.messages,
@@ -121,29 +117,14 @@ export function App() {
   useEffect(() => {
     const handleSnapshot = (nextSnapshot: ChatSnapshot) => {
       setSnapshot(nextSnapshot);
-      if (nextSnapshot.activity.active && isPageVisible()) {
-        acknowledgeActivity();
-      }
     };
 
     window.tx5dr.onPush('chatState', handleSnapshot);
-    const handleFocus = () => {
-      acknowledgeActivity();
-    };
-    const handleVisibilityChange = () => {
-      if (isPageVisible()) {
-        acknowledgeActivity();
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.tx5dr.offPush('chatState', handleSnapshot);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [acknowledgeActivity, isPageVisible]);
+  }, []);
 
   useEffect(() => {
     const element = timelineRef.current;
@@ -169,7 +150,6 @@ export function App() {
       }) as BootstrapResult;
       applyBootstrap(result);
       setDraft('');
-      acknowledgeActivity();
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('loadError', 'Failed to load chat.');
       setError(message);
