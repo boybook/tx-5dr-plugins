@@ -6,7 +6,6 @@ import type {
   PluginUIRequestContext,
 } from '@tx5dr/plugin-api';
 import {
-  ACTIVITY_WINDOW_MS,
   acknowledgeActivity,
   appendMessage,
   coerceChatState,
@@ -16,14 +15,12 @@ import {
   type ChatRole,
   type ChatState,
   upsertProfile,
-  shouldExpireActivity,
 } from './chat-state.js';
 
 const PLUGIN_NAME = 'operator-live-chat';
 const PAGE_ID = 'chat';
 const TOOLBAR_GROUP_ID = 'toolbar-entry';
 const PANEL_ID = 'chat-toolbar';
-const ACTIVITY_TIMER_ID = 'activity-clear';
 const STORE_KEY_MESSAGES = 'messages';
 const STORE_KEY_PROFILES = 'profiles';
 const STORE_KEY_ACTIVITY = 'activity';
@@ -106,26 +103,7 @@ class OperatorLiveChatService {
   }
 
   unload(): void {
-    this.ctx.timers.clear(ACTIVITY_TIMER_ID);
     this.ctx.ui.clearPanelContributions(TOOLBAR_GROUP_ID);
-  }
-
-  onTimer(timerId: string): void {
-    if (timerId !== ACTIVITY_TIMER_ID) {
-      return;
-    }
-
-    void this.enqueue(async () => {
-      const state = this.readState();
-      if (!shouldExpireActivity(state.activity, Date.now())) {
-        return;
-      }
-
-      const nextState = acknowledgeActivity(state);
-      await this.persistState(nextState);
-      this.renderToolbar(false);
-      this.pushSnapshot(this.toSnapshot(nextState));
-    });
   }
 
   private enqueue<T>(task: () => Promise<T> | T): Promise<T> {
@@ -234,7 +212,6 @@ class OperatorLiveChatService {
     });
 
     await this.persistState(nextState);
-    this.ctx.timers.set(ACTIVITY_TIMER_ID, ACTIVITY_WINDOW_MS);
     this.renderToolbar(true);
 
     const snapshot = this.toSnapshot(nextState);
@@ -257,7 +234,6 @@ class OperatorLiveChatService {
       return this.toSnapshot(currentState);
     }
 
-    this.ctx.timers.clear(ACTIVITY_TIMER_ID);
     await this.persistState(nextState);
     this.renderToolbar(false);
     const snapshot = this.toSnapshot(nextState);
@@ -300,11 +276,7 @@ const plugin: PluginDefinition = {
     service = null;
   },
 
-  hooks: {
-    onTimer(timerId) {
-      service?.onTimer(timerId);
-    },
-  },
+  hooks: {},
 };
 
 export default plugin;

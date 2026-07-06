@@ -1,6 +1,5 @@
 export const MAX_MESSAGES = 200;
 export const MAX_MESSAGE_LENGTH = 500;
-export const ACTIVITY_WINDOW_MS = 20_000;
 
 export type ChatRole = 'operator' | 'admin';
 
@@ -240,19 +239,3 @@ export function acknowledgeActivity(state: ChatState): ChatState {
   };
 }
 
-export function shouldExpireActivity(
-  activity: ChatActivity,
-  nowMs: number,
-  windowMs = ACTIVITY_WINDOW_MS,
-): boolean {
-  if (!activity.active || !activity.lastMessageAt) {
-    return false;
-  }
-
-  const lastMessageTime = Date.parse(activity.lastMessageAt);
-  if (!Number.isFinite(lastMessageTime)) {
-    return true;
-  }
-
-  return lastMessageTime + windowMs <= nowMs;
-}
