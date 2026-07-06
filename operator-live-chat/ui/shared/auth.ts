@@ -1,8 +1,3 @@
-interface AuthMeResponse {
-  tokenId: string;
-  label: string;
-}
-
 function getUrlToken(): string | null {
   if (typeof window === 'undefined') {
     return null;
@@ -13,7 +8,7 @@ function getUrlToken(): string | null {
   return token && token.trim() ? token.trim() : null;
 }
 
-export async function fetchCurrentUserLabel(): Promise<AuthMeResponse | null> {
+export async function fetchCurrentUserLabel(): Promise<string | null> {
   const token = getUrlToken();
   const response = await fetch('/api/auth/me', {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -24,13 +19,10 @@ export async function fetchCurrentUserLabel(): Promise<AuthMeResponse | null> {
     return null;
   }
 
-  const json = await response.json() as Partial<AuthMeResponse>;
-  if (typeof json.tokenId !== 'string' || typeof json.label !== 'string') {
+  const json = await response.json() as { label?: unknown };
+  if (typeof json.label !== 'string') {
     return null;
   }
 
-  return {
-    tokenId: json.tokenId,
-    label: json.label,
-  };
+  return json.label;
 }

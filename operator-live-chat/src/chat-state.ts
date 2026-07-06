@@ -3,13 +3,6 @@ export const MAX_MESSAGE_LENGTH = 500;
 
 export type ChatRole = 'operator' | 'admin';
 
-export interface ChatProfile {
-  tokenId: string;
-  label: string;
-  role: ChatRole;
-  lastSeenAt: string;
-}
-
 export interface ChatMessage {
   id: string;
   tokenId: string;
@@ -19,10 +12,13 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export interface ChatActivity {
-  active: boolean;
+export interface ChatActivityState {
   lastMessageId: string | null;
   lastMessageAt: string | null;
+}
+
+export interface ChatActivity extends ChatActivityState {
+  active: boolean;
 }
 
 export interface ChatSnapshot {
@@ -32,8 +28,8 @@ export interface ChatSnapshot {
 
 export interface ChatState {
   messages: ChatMessage[];
-  profiles: Record<string, ChatProfile>;
-  activity: ChatActivity;
+  profiles: Record<string, string>;
+  activity: ChatActivityState;
   reads: Record<string, string>;
 }
 
@@ -49,8 +45,6 @@ interface AppendMessageInput {
 interface UpsertProfileInput {
   tokenId: string;
   label: string;
-  role: ChatRole;
-  lastSeenAt: string;
 }
 
 function coerceRole(value: unknown): ChatRole | null {
@@ -61,16 +55,11 @@ function coerceString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-function coerceBoolean(value: unknown): boolean | null {
-  return typeof value === 'boolean' ? value : null;
-}
-
 export function createEmptyChatState(): ChatState {
   return {
     messages: [],
     profiles: {},
     activity: {
-      active: false,
       lastMessageId: null,
       lastMessageAt: null,
     },
@@ -150,30 +139,25 @@ export function coerceChatState(input: {
     : {};
   const profiles = Object.fromEntries(
     Object.entries(rawProfiles).flatMap(([tokenId, entry]) => {
+      if (typeof entry === 'string') {
+        return [[tokenId, entry]];
+      }
       if (!entry || typeof entry !== 'object') {
         return [];
       }
 
       const label = coerceString((entry as Record<string, unknown>).label);
-      const role = coerceRole((entry as Record<string, unknown>).role);
-      const lastSeenAt = coerceString((entry as Record<string, unknown>).lastSeenAt);
-      if (!label || !role || !lastSeenAt) {
+      if (!label) {
         return [];
       }
 
-      return [[tokenId, {
-        tokenId,
-        label,
-        role,
-        lastSeenAt,
-      } satisfies ChatProfile]];
+      return [[tokenId, label]];
     }),
   );
 
   const rawActivity = input.activity && typeof input.activity === 'object'
     ? input.activity as Record<string, unknown>
     : {};
-  const active = coerceBoolean(rawActivity.active) ?? false;
   const lastMessageId = coerceString(rawActivity.lastMessageId);
   const lastMessageAt = coerceString(rawActivity.lastMessageAt);
 
@@ -194,7 +178,6 @@ export function coerceChatState(input: {
     messages,
     profiles,
     activity: {
-      active,
       lastMessageId,
       lastMessageAt,
     },
@@ -203,26 +186,16 @@ export function coerceChatState(input: {
 }
 
 export function upsertProfile(state: ChatState, input: UpsertProfileInput): ChatState {
-  const profile: ChatProfile = {
-    tokenId: input.tokenId,
-    label: normalizeSenderLabel(input.label, input.tokenId),
-    role: input.role,
-    lastSeenAt: input.lastSeenAt,
-  };
-
   return {
     ...state,
     profiles: {
       ...state.profiles,
-      [input.tokenId]: profile,
+      [input.tokenId]: normalizeSenderLabel(input.label, input.tokenId),
     },
   };
 }
 
-export function appendMessage(state: ChatState, input: AppendMessageInput): {
-  state: ChatState;
-  message: ChatMessage;
-} {
+export function appendMessage(state: ChatState, input: AppendMessageInput): ChatState {
   const message: ChatMessage = {
     id: input.id,
     tokenId: input.tokenId,
@@ -234,15 +207,11 @@ export function appendMessage(state: ChatState, input: AppendMessageInput): {
 
   const messages = [...state.messages, message].slice(-MAX_MESSAGES);
   return {
-    message,
-    state: {
-      ...state,
-      messages,
-      activity: {
-        active: true,
-        lastMessageId: message.id,
-        lastMessageAt: message.createdAt,
-      },
+    ...state,
+    messages,
+    activity: {
+      lastMessageId: message.id,
+      lastMessageAt: message.createdAt,
     },
   };
 }

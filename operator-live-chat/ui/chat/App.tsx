@@ -30,7 +30,6 @@ interface ChatSnapshot {
 interface CurrentUser {
   tokenId: string;
   label: string;
-  role: ChatRole;
 }
 
 interface BootstrapResult extends ChatSnapshot {
@@ -73,15 +72,6 @@ export function App() {
 
   useAutoResize();
 
-  const acknowledgeActivity = useCallback(() => {
-    void window.tx5dr.invoke('ackActivity')
-      .then((result) => {
-        const nextSnapshot = result as ChatSnapshot;
-        setSnapshot(nextSnapshot);
-      })
-      .catch(() => {});
-  }, []);
-
   const applyBootstrap = useCallback((result: BootstrapResult) => {
     setSnapshot({
       messages: result.messages,
@@ -96,19 +86,18 @@ export function App() {
 
     try {
       await window.tx5dr.ready;
-      const me = await fetchCurrentUserLabel();
+      const label = await fetchCurrentUserLabel();
       const result = await window.tx5dr.invoke('bootstrap', {
-        label: me?.label ?? '',
+        label: label ?? '',
       }) as BootstrapResult;
       applyBootstrap(result);
-      acknowledgeActivity();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : t('loadError', 'Failed to load chat.');
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [acknowledgeActivity, applyBootstrap]);
+  }, [applyBootstrap]);
 
   useEffect(() => {
     void load();
@@ -156,7 +145,7 @@ export function App() {
     } finally {
       setSending(false);
     }
-  }, [acknowledgeActivity, applyBootstrap, currentUser, draft, sending]);
+  }, [applyBootstrap, currentUser, draft, sending]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

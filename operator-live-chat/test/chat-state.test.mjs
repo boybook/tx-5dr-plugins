@@ -27,7 +27,7 @@ test('normalizeMessageText rejects overly long values', () => {
 test('appendMessage caps message history', () => {
   let state = createEmptyChatState();
   for (let index = 0; index < MAX_MESSAGES; index += 1) {
-    const result = appendMessage(state, {
+    state = appendMessage(state, {
       id: `msg-${index}`,
       tokenId: 'token-a',
       senderLabel: 'Alpha',
@@ -35,7 +35,6 @@ test('appendMessage caps message history', () => {
       text: `message ${index}`,
       createdAt: new Date(index * 1_000).toISOString(),
     });
-    state = result.state;
   }
 
   const result = appendMessage(state, {
@@ -47,35 +46,31 @@ test('appendMessage caps message history', () => {
     createdAt: new Date(MAX_MESSAGES * 1_000).toISOString(),
   });
 
-  assert.equal(result.state.messages.length, MAX_MESSAGES);
-  assert.equal(result.state.messages[0]?.id, 'msg-1');
-  assert.equal(result.state.messages.at(-1)?.id, 'msg-final');
-  assert.equal(result.state.activity.active, true);
-  assert.equal(result.state.activity.lastMessageId, 'msg-final');
+  assert.equal(result.messages.length, MAX_MESSAGES);
+  assert.equal(result.messages[0]?.id, 'msg-1');
+  assert.equal(result.messages.at(-1)?.id, 'msg-final');
+  assert.equal(result.activity.lastMessageId, 'msg-final');
 });
 
-test('upsertProfile binds sender metadata to token id', () => {
+test('upsertProfile stores sender label by token id', () => {
   const state = upsertProfile(createEmptyChatState(), {
     tokenId: 'token-1',
     label: 'Control Desk',
-    role: 'admin',
-    lastSeenAt: '2025-01-01T00:00:00.000Z',
   });
 
-  assert.deepEqual(state.profiles['token-1'], {
-    tokenId: 'token-1',
-    label: 'Control Desk',
-    role: 'admin',
-    lastSeenAt: '2025-01-01T00:00:00.000Z',
-  });
+  assert.equal(state.profiles['token-1'], 'Control Desk');
 });
 
 test('coerceChatState drops malformed persisted data', () => {
   const state = coerceChatState({
-    messages: [{ id: 1 }, { id: 'ok', tokenId: 'token-2', senderLabel: 'Bravo', role: 'operator', text: 'hi', createdAt: '2025-01-01T00:00:00.000Z' }],
+    messages: [
+      { id: 1 },
+      { id: 'ok', tokenId: 'token-2', senderLabel: 'Bravo', role: 'operator', text: 'hi', createdAt: '2025-01-01T00:00:00.000Z' },
+    ],
     profiles: {
-      broken: { label: 'bad' },
+      broken: {},
       'token-2': { label: 'Bravo', role: 'operator', lastSeenAt: '2025-01-01T00:00:00.000Z' },
+      'token-3': 'Charlie',
     },
     activity: {
       active: true,
@@ -90,11 +85,13 @@ test('coerceChatState drops malformed persisted data', () => {
 
   assert.equal(state.messages.length, 1);
   assert.equal(state.messages[0]?.id, 'ok');
-  assert.deepEqual(state.profiles['token-2'], {
-    tokenId: 'token-2',
-    label: 'Bravo',
-    role: 'operator',
-    lastSeenAt: '2025-01-01T00:00:00.000Z',
+  assert.deepEqual(state.profiles, {
+    'token-2': 'Bravo',
+    'token-3': 'Charlie',
+  });
+  assert.deepEqual(state.activity, {
+    lastMessageId: 'ok',
+    lastMessageAt: '2025-01-01T00:00:00.000Z',
   });
   assert.deepEqual(state.reads, {
     'token-2': 'ok',
@@ -105,7 +102,6 @@ test('acknowledgeActivity records the last read message per token', () => {
   const activeState = {
     ...createEmptyChatState(),
     activity: {
-      active: true,
       lastMessageId: 'msg-1',
       lastMessageAt: '2025-01-01T00:00:00.000Z',
     },
@@ -127,7 +123,7 @@ test('sender sees the new message as read while other users keep unread activity
     role: 'operator',
     text: 'hello',
     createdAt: '2025-01-01T00:00:00.000Z',
-  }).state;
+  });
   state = acknowledgeActivity(state, 'token-a');
 
   assert.equal(hasUnreadActivity(state, 'token-a'), false);

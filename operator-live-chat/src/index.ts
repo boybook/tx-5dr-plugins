@@ -29,8 +29,6 @@ const STORE_KEY_PROFILES = 'profiles';
 const STORE_KEY_ACTIVITY = 'activity';
 const STORE_KEY_READS = 'reads';
 
-type SupportedUserRole = 'operator' | 'admin';
-
 interface BootstrapPayload {
   label?: unknown;
 }
@@ -46,7 +44,6 @@ interface BootstrapResult extends ChatSnapshotPayload {
   currentUser: {
     tokenId: string;
     label: string;
-    role: SupportedUserRole;
   };
 }
 
@@ -55,7 +52,7 @@ interface UserScopedPanelMetaBridge {
   setPanelMetaForUser(panelId: string, tokenId: string, meta: { tone: 'default' | 'danger' }): void;
 }
 
-function toChatRole(role: PluginUIRequestContext['user']['role']): SupportedUserRole {
+function toChatRole(role: PluginUIRequestContext['user']['role']): ChatRole {
   return role === 'admin' ? 'admin' : 'operator';
 }
 
@@ -189,11 +186,10 @@ class OperatorLiveChatService {
     payload: BootstrapPayload | undefined,
     requestContext: PluginUIRequestContext,
   ): Promise<BootstrapResult> {
-    const role = toChatRole(requestContext.user.role);
     const currentState = this.readState();
     const label = normalizeSenderLabel(
       payload?.label,
-      currentState.profiles[requestContext.user.tokenId]?.label ?? requestContext.user.tokenId,
+      currentState.profiles[requestContext.user.tokenId] ?? requestContext.user.tokenId,
     );
 
     this.sessionUsers.set(requestContext.pageSessionId, requestContext.user.tokenId);
@@ -201,14 +197,11 @@ class OperatorLiveChatService {
     const profiledState = upsertProfile(currentState, {
       tokenId: requestContext.user.tokenId,
       label,
-      role,
-      lastSeenAt: new Date().toISOString(),
     });
     const nextState = acknowledgeActivity(profiledState, requestContext.user.tokenId);
 
     await this.persistState(nextState);
     this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
-    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
     this.pushSnapshots(nextState);
 
     return {
@@ -216,7 +209,6 @@ class OperatorLiveChatService {
       currentUser: {
         tokenId: requestContext.user.tokenId,
         label,
-        role,
       },
     };
   }
@@ -230,32 +222,29 @@ class OperatorLiveChatService {
     const text = normalizeMessageText(payload?.text);
     const label = normalizeSenderLabel(
       payload?.label,
-      currentState.profiles[requestContext.user.tokenId]?.label ?? requestContext.user.tokenId,
+      currentState.profiles[requestContext.user.tokenId] ?? requestContext.user.tokenId,
     );
-    const now = new Date().toISOString();
+    const createdAt = new Date().toISOString();
 
     this.sessionUsers.set(requestContext.pageSessionId, requestContext.user.tokenId);
 
     const profiledState = upsertProfile(currentState, {
       tokenId: requestContext.user.tokenId,
       label,
-      role,
-      lastSeenAt: now,
     });
 
     const appendedState = appendMessage(profiledState, {
       id: randomUUID(),
       tokenId: requestContext.user.tokenId,
       senderLabel: label,
-      role: role as ChatRole,
+      role,
       text,
-      createdAt: now,
-    }).state;
+      createdAt,
+    });
     const nextState = acknowledgeActivity(appendedState, requestContext.user.tokenId);
 
     await this.persistState(nextState);
     this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
-    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
     this.pushSnapshots(nextState);
 
     return {
@@ -263,7 +252,6 @@ class OperatorLiveChatService {
       currentUser: {
         tokenId: requestContext.user.tokenId,
         label,
-        role,
       },
     };
   }
@@ -280,7 +268,6 @@ class OperatorLiveChatService {
     }
 
     this.renderGlobalToolbar(this.hasGlobalUnread(nextState));
-    this.renderToolbarForUser(nextState, requestContext.user.tokenId);
     this.pushSnapshots(nextState);
     return this.toSnapshotForUser(nextState, requestContext.user.tokenId);
   }
