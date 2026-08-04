@@ -11,7 +11,7 @@
 
 import type { PluginContext, PluginDefinition, SlotPack } from '@tx5dr/plugin-api';
 import { readdir, stat } from 'fs/promises';
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -54,22 +54,27 @@ interface SlotPackStorageRecord {
 
 /**
  * 获取 TX-5DR 数据根目录。
- * 优先级：环境变量 → 容器路径 → Linux 系统路径 → XDG 标准路径。
- * 此处的查找逻辑需要与服务端 tx5drPaths.getDataDir() 保持一致。
+ * 解析顺序与宿主 tx5drPaths.getDataDir()（packages/server/src/utils/app-paths.ts）保持一致：
+ *   1. TX5DR_DATA_DIR 环境变量（Docker / Linux server 包 / Electron 桌面均会注入）
+ *   2. Windows: %LOCALAPPDATA%\TX-5DR
+ *   3. macOS:   ~/Library/Application Support/TX-5DR
+ *   4. Linux:   $XDG_DATA_HOME/TX-5DR，否则 ~/.local/share/TX-5DR
+ * 不做 /app/data、/var/lib/tx5dr 等目录的存在性探测，避免无环境变量时
+ * 命中宿主并未实际使用的目录（例如桌面版与 server 包并存时读到错误数据）。
  */
-function getDataDir(): string {
+export function getDataDir(): string {
   const env = process.env.TX5DR_DATA_DIR;
   if (env) return env;
 
-  const candidates = [
-    '/app/data',
-    '/var/lib/tx5dr',
-    join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'TX-5DR'),
-  ];
-  for (const dir of candidates) {
-    if (existsSync(dir)) return dir;
+  const APP_DIR_NAME = 'TX-5DR';
+  switch (process.platform) {
+    case 'win32':
+      return join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), APP_DIR_NAME);
+    case 'darwin':
+      return join(homedir(), 'Library', 'Application Support', APP_DIR_NAME);
+    default:
+      return join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), APP_DIR_NAME);
   }
-  return candidates[candidates.length - 1];
 }
 
 /** frames-logs 子目录路径 */
@@ -82,7 +87,7 @@ function getFramesLogDir(): string {
  * 文件名格式：frames-YYYY-MM-DD.jsonl
  * 返回按字典序排序的日期字符串数组，最新日期在最后。
  */
-async function listDates(): Promise<string[]> {
+export async function listDates(): Promise<string[]> {
   const dir = getFramesLogDir();
   let entries: string[];
   try {
@@ -110,10 +115,54 @@ async function listDates(): Promise<string[]> {
  * @param options.cursor- 起始行号游标（默认 0）
  * @returns 记录数组 + 下一游标 + hasMore 标记
  */
-async function loadRecords(
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 单次 loadRecords 允许返回的最大记录数，防止客户端传超大 limit 一次性读入整个文件 */
+const MAX_RECORDS_PER_PAGE = 2000;
+
+/** 将客户端传入的 limit 归一化为 [1, MAX_RECORDS_PER_PAGE]；未传时返回 undefined（不限） */
+export function clampLimit(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : MAX_RECORDS_PER_PAGE;
+  return Math.min(Math.max(1, n), MAX_RECORDS_PER_PAGE);
+}
+
+/** 将游标归一化为非负整数；非法值归 0 */
+export function toNonNegativeCursor(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.trunc(value));
+}
+
+/**
+ * 校验日期字符串，防止目录穿越。
+ *
+ * dateStr 直接拼进文件路径（index.ts 由 iframe invoke 透传，宿主仅做 session
+ * 校验后原样交给插件 handler），若含 `../` 等片段可逃逸 frames-logs 目录。
+ * 与 listDates() 的 `frames-YYYY-MM-DD.jsonl` 正则保持一致。
+ */
+export function assertValidDate(dateStr: string): void {
+  if (!DATE_RE.test(dateStr)) {
+    throw new Error(`Invalid date: ${dateStr}`);
+  }
+}
+
+/**
+ * 读取指定日期的 JSONL 日志文件，支持游标分页。
+ *
+ * 使用流式读取（createReadStream + readline）避免大文件一次性加载到内存。
+ * 遇到格式损坏的行自动跳过，不影响其他有效行的读取。
+ *
+ * @param dateStr       - 日期字符串 "YYYY-MM-DD"
+ * @param options       - 可选参数对象
+ * @param options.limit - 最大返回记录数（默认 Infinity，向后兼容）
+ * @param options.cursor- 起始行号游标（默认 0）
+ * @returns 记录数组 + 下一游标 + hasMore 标记
+ */
+export async function loadRecords(
   dateStr: string,
   options?: { limit?: number; cursor?: number }
 ): Promise<{ records: SlotPackStorageRecord[]; cursor: number; hasMore: boolean }> {
+  assertValidDate(dateStr);
   const filePath = join(getFramesLogDir(), `frames-${dateStr}.jsonl`);
   try {
     const s = await stat(filePath);
@@ -122,20 +171,29 @@ async function loadRecords(
     return { records: [], cursor: 0, hasMore: false };
   }
   const records: SlotPackStorageRecord[] = [];
-  const limit = options?.limit ?? Infinity;
-  const cursor = options?.cursor ?? 0;
+  const limit = clampLimit(options?.limit) ?? Infinity;
+  const cursor = toNonNegativeCursor(options?.cursor);
   let lineIdx = 0;
+  let truncated = false;
 
   try {
     const stream = createReadStream(filePath, 'utf-8');
     const rl = createInterface({ input: stream, crlfDelay: Infinity });
     try {
-      for await (const line of rl) {
+      const iterator = rl[Symbol.asyncIterator]();
+      while (true) {
+        const { done, value: line } = await iterator.next();
+        if (done) break; // 读到 EOF
         if (lineIdx++ < cursor) continue;
         if (!line) continue;
         try {
           records.push(JSON.parse(line) as SlotPackStorageRecord);
-          if (limit !== Infinity && records.length >= limit) break;
+          if (limit !== Infinity && records.length >= limit) {
+            // 已满页：预取下一行确认是否还有更多，避免"恰好整页读到文件末尾"误报 hasMore
+            const next = await iterator.next();
+            truncated = !next.done;
+            break;
+          }
         } catch {
           // 跳过格式损坏的行
         }
@@ -150,7 +208,8 @@ async function loadRecords(
   return {
     records,
     cursor: lineIdx,
-    hasMore: limit !== Infinity && records.length >= limit,
+    // 仅当满页且文件仍有余行时才报告 hasMore（truncated 由预取结果决定）
+    hasMore: truncated,
   };
 }
 
@@ -181,7 +240,7 @@ const plugin: PluginDefinition = {
       id: PAGE_ID,
       title: 'historyViewerTitle',
       entry: 'viewer.html',
-      accessScope: 'admin',            // 仅管理员可访问
+      accessScope: 'operator',         // 操作员即可访问（与 radio-control-toolbar 入口定位一致）
       resourceBinding: 'none',         // 不绑定特定操作员/呼号
     }],
   },

@@ -121,18 +121,19 @@ function formatTime(ms) {
          d.getUTCSeconds().toString().padStart(2, '0');
 }
 
-/** 根据 SNR 值返回对应的 CSS class，用于颜色标记 */
+/** 按 SNR 值返回对应的 CSS class，用于颜色标记（容忍字符串形式的数值） */
 function snrClass(snr) {
-  if (snr === TX_SNR_MARKER) return '';
-  if (snr >= -5) return 'snr-good';
-  if (snr >= -15) return 'snr-ok';
+  if (Number(snr) === TX_SNR_MARKER) return '';
+  const n = typeof snr === 'number' ? snr : Number(snr);
+  if (n >= -5) return 'snr-good';
+  if (n >= -15) return 'snr-ok';
   return 'snr-bad';
 }
 
-/** 格式化 SNR 显示值：发射帧显示 "TX"，解码帧显示实际数值 */
+/** 格式化 SNR 显示值：发射帧显示 "TX"，解码帧显示实际数值（非数字字段转义后展示，防注入） */
 function formatSNR(snr) {
-  if (snr === TX_SNR_MARKER) return 'TX';
-  return String(snr);
+  if (Number(snr) === TX_SNR_MARKER) return 'TX';
+  return escapeHtml(String(snr ?? '-'));
 }
 
 /** 安全的 HTML 转义，防止 XSS */
@@ -146,7 +147,9 @@ function escapeHtml(str) {
 function highlightMessage(msg, filter) {
   const escaped = escapeHtml(msg);
   if (!filter) return escaped;
-  const escapedFilter = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 关键字先做与消息文本相同的 HTML 转义，再做正则转义，
+  // 保证含 & < > 等字符的关键字能匹配到转义后的文本
+  const escapedFilter = escapeHtml(filter).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp('(' + escapedFilter + ')', 'gi');
   return escaped.replace(regex, '<span class="highlight">$1</span>');
 }
@@ -162,37 +165,47 @@ async function loadDates() {
   }
 }
 
-/** 首屏加载：请求第一页数据 */
+/** 首屏加载：请求第一页数据（携带代数守卫，过期响应不提交分页状态） */
 async function loadFirstPage(date) {
+  const gen = loadGeneration;
   try {
     const result = await invoke('loadRecords', { date, limit: FIRST_PAGE_SIZE, cursor: 0 });
+    if (gen !== loadGeneration) return null; // 已切换日期：丢弃过期响应
     currentCursor = result.cursor;
     hasMoreData = result.hasMore;
     return result.records || [];
   } catch (err) {
+    if (gen !== loadGeneration) return null;
     showError(tr('uiError') + ': ' + err.message);
     return [];
   }
 }
 
-/** 后台加载：请求下一页数据 */
+/** 后台加载：请求下一页数据（携带代数守卫，过期响应不提交分页状态） */
 async function loadNextPage() {
   if (!hasMoreData) return [];
+  const gen = loadGeneration;
   try {
     const result = await invoke('loadRecords', {
       date: currentDate, limit: BACKGROUND_PAGE_SIZE, cursor: currentCursor,
     });
+    if (gen !== loadGeneration) return []; // 已切换日期：丢弃过期响应
     currentCursor = result.cursor;
     hasMoreData = result.hasMore;
     return result.records || [];
   } catch (err) {
+    if (gen !== loadGeneration) return [];
+    hasMoreData = false; // 请求失败后停止分页，避免无限重试
     showError(tr('uiError') + ': ' + err.message);
     return [];
   }
 }
 
 function countFrames(records) {
-  return records.reduce((s, r) => s + (r.slotPack?.frames?.length || 0), 0);
+  return records.reduce((s, r) => {
+    const frames = r && typeof r === 'object' && Array.isArray(r.slotPack?.frames) ? r.slotPack.frames : [];
+    return s + frames.length;
+  }, 0);
 }
 
 /** 显示错误横幅，隐藏其他 UI 状态 */
@@ -214,6 +227,7 @@ function showLoading(show) {
   if (show) {
     $('#slotList').innerHTML = '';
     $('#summaryBar').textContent = '';
+    hideProgressiveIndicator(); // 重新加载时清除上一轮可能残留的进度指示器
   }
 }
 
@@ -261,8 +275,9 @@ function formatTimeRange(startMs, endMs) {
  * 点击 header 切换展开/折叠。
  */
 function renderSlot(record, filter, expanded) {
-  const slotPack = record.slotPack || {};
-  const frames = slotPack.frames || [];
+  // 记录级类型保护：异常 JSONL 行（非对象 / frames 非数组）不应导致整行渲染崩溃
+  const slotPack = record && typeof record === 'object' ? (record.slotPack || {}) : {};
+  const frames = Array.isArray(slotPack.frames) ? slotPack.frames : [];
   const startMs = slotPack.startMs;
   const endMs = slotPack.endMs;
   const timeLabel = formatTimeRange(startMs, endMs);
@@ -304,16 +319,21 @@ function renderSlot(record, filter, expanded) {
 
     for (const frame of frames) {
       // 帧内时间偏移：frame.dt 是相对于 startMs 的秒数偏移
-      const frameTime = startMs && frame.dt != null
+      // 字段均做类型保护：宿主 schema 保证 number，但异常 JSONL 行不应导致整行渲染崩溃
+      const hasStart = typeof startMs === 'number';
+      const hasDt = typeof frame.dt === 'number';
+      const frameTime = hasStart && hasDt
         ? formatTime(startMs + frame.dt * 1000)
-        : (frame.dt != null ? frame.dt.toFixed(1) + 's' : '-');
-      const msg = frame.message || '';
+        : (hasDt ? frame.dt.toFixed(1) + 's' : '-');
+      const freqText = typeof frame.freq === 'number' ? frame.freq.toFixed(0) : String(frame.freq ?? '-');
+      const dtText = hasDt ? frame.dt.toFixed(1) : String(frame.dt ?? '-');
+      const msg = typeof frame.message === 'string' ? frame.message : '';
       const row = document.createElement('tr');
       row.innerHTML =
         '<td class="col-time">' + escapeHtml(frameTime) + '</td>' +
         '<td class="col-snr ' + snrClass(frame.snr) + '">' + formatSNR(frame.snr) + '</td>' +
-        '<td class="col-freq">' + (frame.freq != null ? frame.freq.toFixed(0) : '-') + '</td>' +
-        '<td class="col-dt">' + (frame.dt != null ? frame.dt.toFixed(1) : '-') + '</td>' +
+        '<td class="col-freq">' + escapeHtml(freqText) + '</td>' +
+        '<td class="col-dt">' + escapeHtml(dtText) + '</td>' +
         '<td class="col-message">' + highlightMessage(msg, filter) + '</td>';
       tbody.appendChild(row);
     }
@@ -384,10 +404,11 @@ function applyFilter() {
   let records = allRecords;
 
   if (currentBand) {
-    records = records.filter(r => (r.slotPack?.frequencyContext?.band) === currentBand);
+    records = records.filter(r => r && typeof r === 'object' && r.slotPack?.frequencyContext?.band === currentBand);
   }
 
-  const filter = currentFilter.toLowerCase().trim();
+  const trimmedFilter = currentFilter.trim();
+  const filter = trimmedFilter.toLowerCase();
   if (!filter) {
     renderRecords(records, '', cachedTotalSlots, cachedTotalFrames);
     return;
@@ -395,14 +416,14 @@ function applyFilter() {
 
   const filtered = [];
   for (const rec of records) {
-    const frames = (rec.slotPack?.frames || []).filter(f =>
+    const frames = (rec && typeof rec === 'object' && Array.isArray(rec.slotPack?.frames) ? rec.slotPack.frames : []).filter(f =>
       (f.message || '').toLowerCase().includes(filter)
     );
     if (frames.length === 0) continue;
     // 浅拷贝记录但替换已过滤的 frames 数组，保持 slotPack 其他字段不变
     filtered.push({ ...rec, slotPack: { ...rec.slotPack, frames } });
   }
-  renderRecords(filtered, currentFilter, cachedTotalSlots, cachedTotalFrames);
+  renderRecords(filtered, trimmedFilter, cachedTotalSlots, cachedTotalFrames);
 }
 
 /** 渲染所有记录到 slotList 容器，有搜索关键字时默认展开所有卡片 */
@@ -411,7 +432,8 @@ function renderRecords(records, filter, totalSlots, totalFrames) {
   container.innerHTML = '';
   if (records.length === 0) {
     $('#emptyIndicator').hidden = false;
-    updateSummary(records, 0, 0);
+    // 保留总数，搜索无匹配时显示 "0/N 个时隙" 而非 "未找到记录"
+    updateSummary(records, totalSlots, totalFrames);
     return;
   }
   $('#emptyIndicator').hidden = true;
@@ -425,8 +447,11 @@ function renderRecords(records, filter, totalSlots, totalFrames) {
 async function progressiveLoadRemaining(gen) {
   while (hasMoreData && gen === loadGeneration) {
     const batch = await loadNextPage();
-    if (gen !== loadGeneration) return;
-    const filtered = batch.filter(r => (r.slotPack?.frames?.length || 0) > 0);
+    if (gen !== loadGeneration) {
+      hideProgressiveIndicator();
+      return;
+    }
+    const filtered = batch.filter(r => r && typeof r === 'object' && Array.isArray(r.slotPack?.frames) && r.slotPack.frames.length > 0);
     if (filtered.length === 0) continue;
     allRecords.push(...filtered);
     cachedTotalSlots += filtered.length;
@@ -442,6 +467,11 @@ async function progressiveLoadRemaining(gen) {
     await new Promise(r => setTimeout(r, 0));
   }
   hideProgressiveIndicator();
+  // 后台加载完成后若确认没有任何有帧记录，再显示空状态（避免首屏误报）
+  if (allRecords.length === 0 && !hasMoreData) {
+    $('#emptyIndicator').hidden = false;
+    updateSummary([], 0, 0);
+  }
 }
 
 function updateProgressiveIndicator(loaded) {
@@ -468,19 +498,28 @@ async function loadAndRender(date) {
   currentDate = date;
   currentBand = '';
   currentFilter = '';
+  hasMoreData = false;     // 重置分页状态：避免切日期/加载失败后沿用上一个日期的游标
+  currentCursor = 0;
   $('#searchInput').value = '';
   knownBands = new Set();
   showLoading(true);
 
   const firstPage = await loadFirstPage(date);
   if (gen !== loadGeneration) return;
-  allRecords = firstPage.filter(r => (r.slotPack?.frames?.length || 0) > 0);
+  allRecords = (firstPage || []).filter(r => r && typeof r === 'object' && Array.isArray(r.slotPack?.frames) && r.slotPack.frames.length > 0);
   showLoading(false);
   cachedTotalSlots = allRecords.length;
   cachedTotalFrames = countFrames(allRecords);
   populateBandSelect(allRecords);
   $('#bandSelect').value = '';
-  renderRecords(allRecords, '', cachedTotalSlots, cachedTotalFrames);
+  if (allRecords.length === 0 && hasMoreData) {
+    // 首屏全是空时隙且后台仍有数据：先不显示"无数据"，
+    // 由 progressiveLoadRemaining 加载完成后统一收尾（避免误报空状态）
+    $('#emptyIndicator').hidden = true;
+    $('#summaryBar').textContent = '';
+  } else {
+    renderRecords(allRecords, '', cachedTotalSlots, cachedTotalFrames);
+  }
 
   if (hasMoreData) {
     await progressiveLoadRemaining(gen);

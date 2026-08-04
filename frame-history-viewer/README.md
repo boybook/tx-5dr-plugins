@@ -58,11 +58,11 @@ These files are written by TX-5DR's `SlotPackPersistence` subsystem. No network 
 
 ### Data directory resolution
 
-The `dataDir` is resolved at runtime in the following order:
+The `dataDir` is resolved at runtime in the following order, mirroring the host's `tx5drPaths.getDataDir()`:
 
-1. `TX5DR_DATA_DIR` environment variable
-2. `/app/data` (Docker / container deployments)
-3. `/var/lib/tx5dr` (Linux system-wide installation)
+1. `TX5DR_DATA_DIR` environment variable (injected by Docker, the Linux server package, and the Electron desktop app)
+2. `%LOCALAPPDATA%\TX-5DR` (Windows)
+3. `~/Library/Application Support/TX-5DR` (macOS)
 4. `$XDG_DATA_HOME/TX-5DR` or `~/.local/share/TX-5DR` (standard Linux user installation)
 
 ## Build from source
