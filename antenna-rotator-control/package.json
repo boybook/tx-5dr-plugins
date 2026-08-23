@@ -42,6 +42,10 @@
         "to": "index.js"
       },
       {
+        "from": "dist/rotator-utils.js",
+        "to": "rotator-utils.js"
+      },
+      {
         "from": "src/locales",
         "to": "locales"
       },

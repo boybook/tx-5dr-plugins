@@ -23,6 +23,7 @@ const outputDir = path.join(rootDir, '.artifacts', 'market', channel);
 const artifactsDir = path.join(outputDir, 'artifacts');
 const stagingRoot = path.join(rootDir, '.artifacts', 'staging');
 const README_MAX_BYTES = 100 * 1024;
+const RUNTIME_ENTRY_CANDIDATES = ['plugin.js', 'index.js', 'index.mjs'];
 
 if (!['stable', 'nightly'].includes(channel)) {
   throw new Error(`Unsupported channel: ${channel}`);
@@ -168,13 +169,38 @@ async function buildCatalogEntry(pluginDir) {
     await copyRecursive(sourcePath, path.join(stageDir, item.to));
   }
 
-  const buildEntryPath = path.join(pluginDir, meta.entry);
-  const moduleUrl = pathToFileURL(buildEntryPath);
+  let runtimeEntryPath;
+  for (const candidate of RUNTIME_ENTRY_CANDIDATES) {
+    const candidatePath = path.join(stageDir, candidate);
+    if (await pathExists(candidatePath)) {
+      runtimeEntryPath = candidatePath;
+      break;
+    }
+  }
+  if (!runtimeEntryPath) {
+    throw new Error(
+      `Packaged plugin ${meta.pluginName} is missing a runtime entry (${RUNTIME_ENTRY_CANDIDATES.join(', ')})`,
+    );
+  }
+
+  // Import the staged entry, not the workspace build output. This catches
+  // missing relative modules and other packaging-only failures before release.
+  const moduleUrl = pathToFileURL(runtimeEntryPath);
   moduleUrl.searchParams.set('ts5dr_market', `${Date.now()}`);
   const loaded = await import(moduleUrl.href);
   const plugin = loaded.default ?? loaded;
   if (!plugin || typeof plugin !== 'object') {
-    throw new Error(`Built plugin entry did not export a plugin object: ${meta.pluginName}`);
+    throw new Error(`Packaged plugin entry did not export a plugin object: ${meta.pluginName}`);
+  }
+  if (plugin.name !== meta.pluginName) {
+    throw new Error(
+      `Packaged plugin name mismatch: metadata=${meta.pluginName}, runtime=${String(plugin.name)}`,
+    );
+  }
+  if (plugin.version !== pkg.version) {
+    throw new Error(
+      `Packaged plugin version mismatch for ${meta.pluginName}: package=${pkg.version}, runtime=${String(plugin.version)}`,
+    );
   }
 
   const zipFileName = `${meta.pluginName}-${pkg.version}.zip`;

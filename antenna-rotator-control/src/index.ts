@@ -561,6 +561,11 @@ async function safeReadAsync<T>(read: () => Promise<T>, fallback: T): Promise<T>
 
 const service = new RotatorService();
 
+type HamlibPluginDefinition = Omit<PluginDefinition, 'apiVersion' | 'permissions'> & {
+  apiVersion: 2;
+  permissions: readonly ['host:hamlib'];
+};
+
 async function handlePageMessage(action: string, data: unknown): Promise<unknown> {
   const record = readRecord(data);
   switch (action) {
@@ -598,7 +603,8 @@ async function handlePageMessage(action: string, data: unknown): Promise<unknown
   }
 }
 
-const plugin: PluginDefinition = {
+const plugin: HamlibPluginDefinition = {
+  apiVersion: 2,
   name: PLUGIN_NAME,
   version: '0.1.1',
   type: 'utility',
