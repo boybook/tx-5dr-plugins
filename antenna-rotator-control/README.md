@@ -25,4 +25,4 @@ npm run build
 npm test
 ```
 
-The plugin declares `hamlib@0.7.1` as an optional peer dependency and ships a local type shim for that API surface. Runtime still uses `import('hamlib')` from the host process; the marketplace artifact must include `dist/index.js`, `src/locales`, and `dist/ui` only, never `node_modules/hamlib`.
+The plugin declares `hamlib@0.7.1` as an optional peer dependency and ships a local type shim for that API surface. Runtime still uses the host-provided Hamlib capability; the marketplace artifact must include `dist/index.js`, `dist/rotator-utils.js`, `src/locales`, and `dist/ui`, but never `node_modules/hamlib`.
