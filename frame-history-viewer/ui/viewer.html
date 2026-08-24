@@ -1,0 +1,42 @@
+<!--
+  Frame History Viewer — iframe 页面模板
+  通过 Bridge SDK 注入 TX-5DR 宿主上下文，使用 CSS Design Tokens 适配主题。
+  所有文本使用 data-i18n 标记，JS 在运行时动态替换为当前语言的翻译。
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="uiEyebrow">Frame History Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 固定头部：时间范围/波段/搜索/刷新 -->
+    <div class="fixed-header">
+      <div class="topbar">
+        <div class="eyebrow" data-i18n="uiEyebrow">Frame History</div>
+        <div class="topbar-actions">
+          <select id="dateSelect" class="date-select"></select>
+          <select id="bandSelect" class="band-select">
+          </select>
+          <input id="searchInput" class="search-input" type="search" data-i18n-placeholder="uiSearchPlaceholder" placeholder="Search message..." />
+          <button id="refreshBtn" class="icon-btn" data-i18n-title="uiRefresh" title="Refresh">↻</button>
+        </div>
+      </div>
+      <div id="summaryBar" class="summary-bar"></div>
+    </div>
+
+    <!-- 可滚动内容区：加载/错误/空状态指示器 + 时隙卡片列表 -->
+    <div class="scroll-body">
+      <div id="loadingIndicator" class="loading" hidden></div>
+      <div id="errorIndicator" class="banner error" hidden></div>
+      <div id="emptyIndicator" class="loading" hidden></div>
+      <div id="slotList" class="slot-list"></div>
+    </div>
+  </div>
+
+  <script src="viewer.js"></script>
+</body>
+</html>
