@@ -434,6 +434,7 @@ async function reconcileDesiredState(ctx, reason) {
 export default {
   name: PLUGIN_ID,
   version: VERSION,
+  minPluginApiVersion: '1.0.0',
   type: 'utility',
   instanceScope: 'global',
   description: '接入 websdr.bd8ftc.de FRP穿透服务，按登记呼号下载专属 frpc 配置，并启动本机 frpc 客户端。',

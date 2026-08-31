@@ -158,6 +158,7 @@ async function pollRadio(ctx) {
 export default {
     name: 'tx5dr-waveloggate',
     version: '2.1.0',
+    minPluginApiVersion: '1.7.11',
     type: 'utility',
     description: 'pluginDescription',
     instanceScope: 'operator',

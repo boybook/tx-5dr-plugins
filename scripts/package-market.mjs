@@ -24,6 +24,8 @@ const artifactsDir = path.join(outputDir, 'artifacts');
 const stagingRoot = path.join(rootDir, '.artifacts', 'staging');
 const README_MAX_BYTES = 100 * 1024;
 const RUNTIME_ENTRY_CANDIDATES = ['plugin.js', 'index.js', 'index.mjs'];
+const ARTIFACT_MANIFEST_FILE = 'tx5dr-plugin.json';
+const STRICT_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 
 if (!['stable', 'nightly'].includes(channel)) {
   throw new Error(`Unsupported channel: ${channel}`);
@@ -31,6 +33,12 @@ if (!['stable', 'nightly'].includes(channel)) {
 
 function isObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function assertStrictSemver(value, label) {
+  if (typeof value !== 'string' || !STRICT_SEMVER_PATTERN.test(value)) {
+    throw new Error(`${label} must be a strict semantic version`);
+  }
 }
 
 async function readJson(filePath) {
@@ -152,6 +160,10 @@ async function buildCatalogEntry(pluginDir) {
   if (!isObject(meta)) {
     throw new Error(`Missing tx5drPlugin metadata for plugin ${pluginDir}`);
   }
+  assertStrictSemver(
+    meta.minPluginApiVersion,
+    `Plugin ${meta.pluginName ?? pluginDir} package minPluginApiVersion`,
+  );
 
   const stageDir = path.join(stagingRoot, meta.pluginName);
   await fs.rm(stageDir, { recursive: true, force: true });
@@ -202,6 +214,33 @@ async function buildCatalogEntry(pluginDir) {
       `Packaged plugin version mismatch for ${meta.pluginName}: package=${pkg.version}, runtime=${String(plugin.version)}`,
     );
   }
+  assertStrictSemver(
+    plugin.minPluginApiVersion,
+    `Plugin ${meta.pluginName} runtime minPluginApiVersion`,
+  );
+  if (plugin.minPluginApiVersion !== meta.minPluginApiVersion) {
+    throw new Error(
+      `Packaged plugin Plugin API requirement mismatch for ${meta.pluginName}: `
+      + `package=${String(meta.minPluginApiVersion)}, runtime=${String(plugin.minPluginApiVersion)}`,
+    );
+  }
+
+  const artifactManifest = {
+    schemaVersion: 1,
+    name: plugin.name,
+    version: plugin.version,
+    minPluginApiVersion: plugin.minPluginApiVersion,
+    ...(plugin.apiVersion === 2 ? { apiVersion: 2 } : {}),
+    type: plugin.type,
+    instanceScope: plugin.instanceScope ?? 'operator',
+    permissions: Array.isArray(plugin.permissions) ? plugin.permissions : [],
+    ...(plugin.strategyFeatures ? { strategyFeatures: plugin.strategyFeatures } : {}),
+  };
+  await fs.writeFile(
+    path.join(stageDir, ARTIFACT_MANIFEST_FILE),
+    `${JSON.stringify(artifactManifest, null, 2)}\n`,
+    'utf8',
+  );
 
   const zipFileName = `${meta.pluginName}-${pkg.version}.zip`;
   const zipPath = path.join(artifactsDir, zipFileName);
@@ -229,7 +268,7 @@ async function buildCatalogEntry(pluginDir) {
     readmeSourceUrl,
     locales: Object.keys(locales).length > 0 ? locales : undefined,
     latestVersion: pkg.version,
-    minHostVersion: meta.minHostVersion,
+    minPluginApiVersion: meta.minPluginApiVersion,
     author: meta.author,
     license: meta.license ?? 'GPL-3.0-only',
     repository: meta.repository,
@@ -242,6 +281,7 @@ async function buildCatalogEntry(pluginDir) {
     sha256,
     size: stat.size,
     publishedAt: new Date().toISOString(),
+    artifactManifestVersion: 1,
   };
 }
 
@@ -256,7 +296,7 @@ for (const pluginDir of pluginDirs) {
 }
 
 const catalog = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedAt: new Date().toISOString(),
   channel,
   plugins: plugins.sort((left, right) => left.name.localeCompare(right.name)),

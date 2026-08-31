@@ -14,7 +14,7 @@
     "pluginName": "tx5dr-waveloggate",
     "title": "WaveLogGate for TX-5DR",
     "description": "Real-time WaveLog radio frequency and mode synchronization for TX-5DR.",
-    "minHostVersion": "1.7.11",
+    "minPluginApiVersion": "1.7.11",
     "author": "BI7ALG",
     "license": "MIT",
     "repository": "https://github.com/BI7ALG/tx5dr-waveloggate-plugin",

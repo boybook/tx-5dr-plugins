@@ -16,7 +16,7 @@
     "pluginName": "qso-session-inspector",
     "title": "QSO Session Inspector",
     "description": "Tracks slot, decode, and QSO lifecycle events for inspection and debugging.",
-    "minHostVersion": "1.0.0",
+    "minPluginApiVersion": "1.2.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",
