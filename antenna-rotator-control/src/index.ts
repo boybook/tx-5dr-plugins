@@ -563,6 +563,7 @@ const service = new RotatorService();
 
 type HamlibPluginDefinition = Omit<PluginDefinition, 'apiVersion' | 'permissions'> & {
   apiVersion: 2;
+  minPluginApiVersion: string;
   permissions: readonly ['host:hamlib'];
 };
 
@@ -607,6 +608,7 @@ const plugin: HamlibPluginDefinition = {
   apiVersion: 2,
   name: PLUGIN_NAME,
   version: '0.1.1',
+  minPluginApiVersion: '1.7.8',
   type: 'utility',
   instanceScope: 'global',
   permissions: ['host:hamlib'],

@@ -1,5 +1,7 @@
 import type { PluginDefinition, PluginContext } from '@tx5dr/plugin-api';
 
+type MarketplacePluginDefinition = PluginDefinition & { minPluginApiVersion: string };
+
 const STATS_KEY = 'sessionStats';
 const EVENTS_KEY = 'sessionEvents';
 const STATS_PANEL_ID = 'session-stats';
@@ -74,9 +76,10 @@ function pushEvent(ctx: PluginContext, entry: string): void {
   publish(ctx);
 }
 
-const qsoSessionInspectorPlugin: PluginDefinition = {
+const qsoSessionInspectorPlugin: MarketplacePluginDefinition = {
   name: 'qso-session-inspector',
   version: '1.0.0',
+  minPluginApiVersion: '1.2.0',
   type: 'utility',
   description: 'pluginDescription',
 

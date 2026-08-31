@@ -17,7 +17,7 @@
     "pluginName": "web-iframe-embed",
     "title": "Web Embed",
     "description": "Embed external web pages or stream/video URLs in TX-5DR panels.",
-    "minHostVersion": "1.0.0",
+    "minPluginApiVersion": "1.7.9",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",

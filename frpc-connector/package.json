@@ -9,7 +9,7 @@
     "pluginName": "bd8ftc-frpc-connector",
     "title": "websdr.bd8ftc.de FRP穿透服务",
     "description": "接入 websdr.bd8ftc.de FRP穿透服务，按登记呼号下载专属 frpc 配置，并启动本机 frpc 客户端。",
-    "minHostVersion": "1.0.0",
+    "minPluginApiVersion": "1.0.0",
     "entry": "src/index.js",
     "include": [
       { "from": "src/index.js", "to": "index.js" },

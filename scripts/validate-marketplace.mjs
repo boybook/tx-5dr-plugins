@@ -5,6 +5,13 @@ import path from 'node:path';
 
 const rootDir = process.cwd();
 const README_MAX_BYTES = 100 * 1024;
+const STRICT_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+
+function assertStrictSemver(value, label) {
+  if (typeof value !== 'string' || !STRICT_SEMVER_PATTERN.test(value)) {
+    throw new Error(`${label} must be a strict semantic version`);
+  }
+}
 
 function isObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -64,11 +71,15 @@ async function validateWorkspace(workspaceDir) {
   }
 
   const meta = pkg.tx5drPlugin;
-  for (const key of ['pluginName', 'title', 'description', 'minHostVersion', 'entry']) {
+  for (const key of ['pluginName', 'title', 'description', 'minPluginApiVersion', 'entry']) {
     if (typeof meta[key] !== 'string' || meta[key].trim() === '') {
       throw new Error(`Workspace ${pkg.name ?? workspaceDir} is missing tx5drPlugin.${key}`);
     }
   }
+  assertStrictSemver(
+    meta.minPluginApiVersion,
+    `Workspace ${pkg.name ?? workspaceDir} tx5drPlugin.minPluginApiVersion`,
+  );
 
   if (!Array.isArray(meta.include) || meta.include.length === 0) {
     throw new Error(`Workspace ${pkg.name ?? workspaceDir} must define tx5drPlugin.include`);

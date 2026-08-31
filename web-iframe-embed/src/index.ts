@@ -1,5 +1,7 @@
 import type { PluginContext, PluginDefinition, PluginUIRequestContext } from '@tx5dr/plugin-api';
 
+type MarketplacePluginDefinition = PluginDefinition & { minPluginApiVersion: string };
+
 export const WEB_IFRAME_EMBED_PLUGIN_NAME = 'web-iframe-embed';
 
 const STATIC_PANEL_DEFINITIONS = [
@@ -193,9 +195,10 @@ function notifyConfigUpdated(ctx: PluginContext): void {
   }
 }
 
-const plugin: PluginDefinition = {
+const plugin: MarketplacePluginDefinition = {
   name: WEB_IFRAME_EMBED_PLUGIN_NAME,
   version: '1.2.3',
+  minPluginApiVersion: '1.7.9',
   type: 'utility',
   description: 'pluginDescription',
 

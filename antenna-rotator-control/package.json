@@ -18,7 +18,7 @@
     "pluginName": "antenna-rotator-control",
     "title": "Antenna Rotator Control",
     "description": "Controls Hamlib-compatible azimuth antenna rotators from the RadioControl toolbar.",
-    "minHostVersion": "1.0.0",
+    "minPluginApiVersion": "1.7.8",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",

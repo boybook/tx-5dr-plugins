@@ -1,5 +1,7 @@
 import type { PluginDefinition, PluginContext } from '@tx5dr/plugin-api';
 
+type MarketplacePluginDefinition = PluginDefinition & { minPluginApiVersion: string };
+
 export const IFRAME_PANEL_DEMO_PLUGIN_NAME = 'iframe-panel-demo';
 
 const TIMER_ID = 'push-tick';
@@ -26,9 +28,10 @@ function pushToLiveMonitor(
   }
 }
 
-export const iframePanelDemoPlugin: PluginDefinition = {
+export const iframePanelDemoPlugin: MarketplacePluginDefinition = {
   name: IFRAME_PANEL_DEMO_PLUGIN_NAME,
   version: '1.0.1',
+  minPluginApiVersion: '1.2.0',
   type: 'utility',
   description: 'pluginDescription',
 

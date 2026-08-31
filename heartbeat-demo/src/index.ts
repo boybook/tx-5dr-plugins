@@ -1,5 +1,7 @@
 import type { PluginDefinition, PluginContext } from '@tx5dr/plugin-api';
 
+type MarketplacePluginDefinition = PluginDefinition & { minPluginApiVersion: string };
+
 const TIMER_ID = 'heartbeat';
 const PANEL_ID = 'heartbeat-status';
 const GLOBAL_COUNT_KEY = 'totalHeartbeatCount';
@@ -40,9 +42,10 @@ function reset(ctx: PluginContext): void {
   publish(ctx);
 }
 
-export const heartbeatDemoPlugin: PluginDefinition = {
+export const heartbeatDemoPlugin: MarketplacePluginDefinition = {
   name: 'heartbeat-demo',
   version: '1.0.0',
+  minPluginApiVersion: '1.2.0',
   type: 'utility',
   description: 'Demonstrate plugin timers, global storage, panels, and button quick actions',
 
