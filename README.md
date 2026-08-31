@@ -33,6 +33,8 @@ Each plugin must expose a uniform contract to CI:
 - `tx5drPlugin.pluginName`: runtime plugin directory name
 - `tx5drPlugin.entry`: built entry module path used for validation
 - `tx5drPlugin.include`: files or directories copied into the released ZIP
+- `tx5drPlugin.minPluginApiVersion`: oldest bundled `@tx5dr/plugin-api` version
+  that supports the plugin; it is unrelated to the TX-5DR nightly product version
 
 `package-lock.json` is optional. If present, CI uses `npm ci`; otherwise it
 falls back to `npm install`.
@@ -48,7 +50,7 @@ Example:
     "pluginName": "example-plugin",
     "title": "Example Plugin",
     "description": "Example description",
-    "minHostVersion": "1.0.0",
+    "minPluginApiVersion": "1.0.0",
     "entry": "dist/index.js",
     "include": [
       { "from": "dist/index.js", "to": "index.js" },
