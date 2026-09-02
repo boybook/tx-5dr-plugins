@@ -1,0 +1,63 @@
+{
+  "name": "tx5dr-plugin-webhook-push",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node -e \"require('fs').cpSync('src/locales','dist/locales',{recursive:true})\"",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "test": "vitest run"
+  },
+  "tx5drPlugin": {
+    "pluginName": "webhook-push",
+    "title": "Webhook Push",
+    "description": "Push FT8/FT4 decode, QSO lifecycle and station events to multiple webhook endpoints with per-target method and payload formats.",
+    "minHostVersion": "1.0.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/webhook-push",
+    "categories": [
+      "utility",
+      "integration",
+      "monitoring"
+    ],
+    "keywords": [
+      "webhook"
+    ],
+    "entry": "dist/index.js",
+    "include": [
+      {
+        "from": "dist/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "dist/queue.js",
+        "to": "queue.js"
+      },
+      {
+        "from": "dist/transport.js",
+        "to": "transport.js"
+      },
+      {
+        "from": "dist/locales",
+        "to": "locales"
+      },
+      {
+        "from": "README.md",
+        "to": "README.md"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^1.7.8",
+    "@types/node": "^22.19.20",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
+  }
+}
