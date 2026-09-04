@@ -1,0 +1,7 @@
+{
+  "pluginName": "VHF-UHF FT8 Activity Europe",
+  "pluginDescription": "VHF-UHF FT8 Activity Europe strategy for TX-5DR.",
+  "contestLogTitle": "Contest log",
+  "contestNewCallsign": "New on band",
+  "contestNewMultiplier": "New multiplier"
+}

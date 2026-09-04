@@ -1,0 +1,7 @@
+{
+  "pluginName": "YBDXPI FT8 Contest",
+  "pluginDescription": "TX-5DR YBDXPI FT8 Contest 比赛策略。",
+  "contestLogTitle": "比赛日志",
+  "contestNewCallsign": "本波段新台",
+  "contestNewMultiplier": "新系数"
+}

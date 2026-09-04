@@ -47,6 +47,10 @@ async function getPluginDirs() {
     if (!await fileExists(packageJsonPath)) {
       continue;
     }
+    const pkg = await readJson(packageJsonPath);
+    if (!isObject(pkg.tx5drPlugin)) {
+      continue;
+    }
     pluginDirs.push(path.join(rootDir, entry.name));
   }
   if (pluginDirs.length === 0) {

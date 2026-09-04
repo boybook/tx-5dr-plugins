@@ -1,0 +1,7 @@
+{
+  "pluginName": "European FT8 DX Contest",
+  "pluginDescription": "TX-5DR European FT8 DX Contest 比赛策略。",
+  "contestLogTitle": "比赛日志",
+  "contestNewCallsign": "本波段新台",
+  "contestNewMultiplier": "新系数"
+}

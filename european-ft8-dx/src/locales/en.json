@@ -1,0 +1,7 @@
+{
+  "pluginName": "European FT8 DX Contest",
+  "pluginDescription": "European FT8 DX Contest strategy for TX-5DR.",
+  "contestLogTitle": "Contest log",
+  "contestNewCallsign": "New on band",
+  "contestNewMultiplier": "New multiplier"
+}

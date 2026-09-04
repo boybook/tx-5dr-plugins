@@ -36,6 +36,10 @@ async function getPluginDirs() {
     if (!await fileExists(packageJsonPath)) {
       continue;
     }
+    const pkg = await readJson(packageJsonPath);
+    if (!pkg.tx5drPlugin || typeof pkg.tx5drPlugin !== 'object') {
+      continue;
+    }
     pluginDirs.push(path.join(rootDir, entry.name));
   }
   return pluginDirs.sort();
@@ -57,10 +61,12 @@ async function installAndBuild(pluginDir) {
   const hasLockfile = await fileExists(path.join(pluginDir, 'package-lock.json'));
 
   console.log(`\n==> Building plugin: ${pkg.name ?? path.basename(pluginDir)}`);
-  if (hasLockfile) {
-    run('npm', ['ci'], pluginDir);
-  } else {
-    run('npm', ['install', '--no-fund', '--no-audit'], pluginDir);
+  if (!process.env.TX5DR_HOST_ROOT) {
+    if (hasLockfile) {
+      run('npm', ['ci'], pluginDir);
+    } else {
+      run('npm', ['install', '--no-fund', '--no-audit'], pluginDir);
+    }
   }
 
   if (typeof pkg?.scripts?.build !== 'string' || pkg.scripts.build.trim() === '') {
@@ -74,6 +80,10 @@ const pluginDirs = await getPluginDirs();
 if (pluginDirs.length === 0) {
   console.log('No plugin directories found.');
   process.exit(0);
+}
+
+if (process.env.TX5DR_HOST_ROOT) {
+  run(process.execPath, ['scripts/link-local-host.mjs'], rootDir);
 }
 
 for (const pluginDir of pluginDirs) {
