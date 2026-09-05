@@ -76,6 +76,13 @@ async function installAndBuild(pluginDir) {
   run('npm', ['run', 'build'], pluginDir);
 }
 
+async function installSharedDependencies() {
+  const sharedDir = path.join(rootDir, 'shared', 'ft8-contest-family');
+  if (!await fileExists(path.join(sharedDir, 'package.json'))) return;
+  console.log(`\n==> Installing shared package dependencies: ${sharedDir}`);
+  run('npm', ['install', '--no-fund', '--no-audit'], sharedDir);
+}
+
 const pluginDirs = await getPluginDirs();
 if (pluginDirs.length === 0) {
   console.log('No plugin directories found.');
@@ -84,6 +91,8 @@ if (pluginDirs.length === 0) {
 
 if (process.env.TX5DR_HOST_ROOT) {
   run(process.execPath, ['scripts/link-local-host.mjs'], rootDir);
+} else {
+  await installSharedDependencies();
 }
 
 for (const pluginDir of pluginDirs) {
