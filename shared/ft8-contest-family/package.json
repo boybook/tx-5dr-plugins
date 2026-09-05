@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tx5dr/plugin-api": "^2.4.0"
+    "@tx5dr/plugin-api": "^2.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

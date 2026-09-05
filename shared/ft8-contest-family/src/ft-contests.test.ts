@@ -53,7 +53,7 @@ describe('FT contest catalog', () => {
         accessScope: 'operator',
         resourceBinding: 'operator',
       }));
-      expect(entry.definition.minPluginApiVersion).toBe('2.4.0');
+      expect(entry.definition.minPluginApiVersion).toBe('2.5.0');
       expect(entry.dirPath).toContain('ft8-contest-family');
       expect(entry.contest.edition.source?.url).toMatch(/^https?:\/\//);
       expect(entry.contest.presentation?.summary).toBeTruthy();

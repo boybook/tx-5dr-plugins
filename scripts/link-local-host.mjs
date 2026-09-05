@@ -6,7 +6,7 @@ const hostRoot = resolve(process.env.TX5DR_HOST_ROOT ?? join(root, '..', 'tx-5dr
 const hostPackages = join(hostRoot, 'packages');
 const hostNodeModules = join(hostRoot, 'node_modules');
 const sharedPackage = join(root, 'shared', 'ft8-contest-family');
-const pluginDirs = ['arrl-digital', 'ft-roundup', 'ft-challenge', 'european-ft8-dx', 'european-ft4-dx', 'rsgb-ft4-international-activity-day', 'rsgb-ft4-contest-series', 'ft8-activity-europe', 'ft8-activity-na', 'nccc-ft4-sprint', 'batavia-ft8', 'ybdxpi-ft8', 'africa-ft4-dx', 'ww-digi'];
+const pluginDirs = ['contest-arrl-digital', 'contest-ft-roundup', 'contest-ft-challenge', 'contest-european-ft8-dx', 'contest-european-ft4-dx', 'contest-rsgb-ft4-international-activity-day', 'contest-rsgb-ft4-contest-series', 'contest-ft8-activity-europe', 'contest-ft8-activity-na', 'contest-nccc-ft4-sprint', 'contest-batavia-ft8', 'contest-ybdxpi-ft8', 'contest-africa-ft4-dx', 'contest-ww-digi'];
 
 function link(source, target) {
   mkdirSync(join(target, '..'), { recursive: true });

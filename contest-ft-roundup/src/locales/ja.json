@@ -1,0 +1,7 @@
+{
+  "pluginName": "FT Roundup",
+  "pluginDescription": "TX-5DR FT Roundup コンテスト戦略。",
+  "contestLogTitle": "コンテストログ",
+  "contestNewCallsign": "このバンドで未交信",
+  "contestNewMultiplier": "新マルチ"
+}

@@ -1494,6 +1494,7 @@ const wwDigiContestLogbook = defaultContestLogbook({
   }),
   sessionKey: (_contest, context) => contestLogbookSessionKey(configuredContestYear(context.config.contestYear)),
   stateKey: (_contest, context) => sessionKey(context.operator.callsign, configuredContestYear(context.config.contestYear)),
+  deferStartup: true,
 });
 
 const { createStrategyRuntime: createWWDigiStrategyRuntime, ...wwDigiPluginMetadata } = wwDigiBasePlugin;

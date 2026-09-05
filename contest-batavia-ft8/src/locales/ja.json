@@ -1,0 +1,7 @@
+{
+  "pluginName": "Batavia FT8 Contest",
+  "pluginDescription": "TX-5DR Batavia FT8 Contest コンテスト戦略。",
+  "contestLogTitle": "コンテストログ",
+  "contestNewCallsign": "このバンドで未交信",
+  "contestNewMultiplier": "新マルチ"
+}

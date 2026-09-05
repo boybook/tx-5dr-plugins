@@ -2,32 +2,32 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const plugins = [
-  ['arrl-digital', 'ARRL International Digital Contest'],
-  ['ft-roundup', 'FT Roundup'],
-  ['ft-challenge', 'FT Challenge'],
-  ['european-ft8-dx', 'European FT8 DX Contest'],
-  ['european-ft4-dx', 'European FT4 DX Contest'],
-  ['rsgb-ft4-international-activity-day', 'RSGB FT4 International Activity Day'],
-  ['rsgb-ft4-contest-series', 'RSGB FT4 Contest Series'],
-  ['ft8-activity-europe', 'VHF-UHF FT8 Activity Europe'],
-  ['ft8-activity-na', 'VHF-UHF FT8 Activity-NA'],
-  ['nccc-ft4-sprint', 'NCCC FT4 Sprint'],
-  ['batavia-ft8', 'Batavia FT8 Contest'],
-  ['ybdxpi-ft8', 'YBDXPI FT8 Contest'],
-  ['africa-ft4-dx', 'Africa FT4 DX Contest'],
-  ['ww-digi', 'WW Digi'],
+  ['contest-arrl-digital', 'ARRL International Digital Contest', 'arrl-digital'],
+  ['contest-ft-roundup', 'FT Roundup', 'ft-roundup'],
+  ['contest-ft-challenge', 'FT Challenge', 'ft-challenge'],
+  ['contest-european-ft8-dx', 'European FT8 DX Contest', 'european-ft8-dx'],
+  ['contest-european-ft4-dx', 'European FT4 DX Contest', 'european-ft4-dx'],
+  ['contest-rsgb-ft4-international-activity-day', 'RSGB FT4 International Activity Day', 'rsgb-ft4-international-activity-day'],
+  ['contest-rsgb-ft4-contest-series', 'RSGB FT4 Contest Series', 'rsgb-ft4-contest-series'],
+  ['contest-ft8-activity-europe', 'VHF-UHF FT8 Activity Europe', 'ft8-activity-europe'],
+  ['contest-ft8-activity-na', 'VHF-UHF FT8 Activity-NA', 'ft8-activity-na'],
+  ['contest-nccc-ft4-sprint', 'NCCC FT4 Sprint', 'nccc-ft4-sprint'],
+  ['contest-batavia-ft8', 'Batavia FT8 Contest', 'batavia-ft8'],
+  ['contest-ybdxpi-ft8', 'YBDXPI FT8 Contest', 'ybdxpi-ft8'],
+  ['contest-africa-ft4-dx', 'Africa FT4 DX Contest', 'africa-ft4-dx'],
+  ['contest-ww-digi', 'WW Digi', 'ww-digi'],
 ];
 
 const root = process.cwd();
-for (const [name, title] of plugins) {
+for (const [name, title, catalogName] of plugins) {
   const dir = join(root, name);
-  const isWw = name === 'ww-digi';
+  const isWw = catalogName === 'ww-digi';
   const importPath = isWw
     ? '@tx5dr/ft8-contest-family-shared/ww-digi'
     : '@tx5dr/ft8-contest-family-shared/ft-contests';
   const source = isWw
-    ? `import { wwDigiStrategyPlugin, wwDigiLocales } from '${importPath}';\n\nexport const plugin = wwDigiStrategyPlugin;\nexport const locales = wwDigiLocales;\n\nexport default plugin;\n`
-    : `import { ftContestCatalog } from '${importPath}';\n\nconst entry = ftContestCatalog.find((candidate) => candidate.name === '${name}');\nif (!entry) throw new Error('Missing contest catalog entry: ${name}');\n\nexport const plugin = entry.definition;\nexport const locales = entry.locales;\n\nexport default plugin;\n`;
+    ? `import { wwDigiStrategyPlugin, wwDigiLocales } from '${importPath}';\n\nexport const plugin = { ...wwDigiStrategyPlugin, name: '${name}' };\nexport const locales = wwDigiLocales;\n\nexport default plugin;\n`
+    : `import { ftContestCatalog } from '${importPath}';\n\nconst entry = ftContestCatalog.find((candidate) => candidate.name === '${catalogName}');\nif (!entry) throw new Error('Missing contest catalog entry: ${catalogName}');\n\nexport const plugin = { ...entry.definition, name: '${name}' };\nexport const locales = entry.locales;\n\nexport default plugin;\n`;
   const packageJson = {
     name: `tx5dr-plugin-${name}`,
     version: '1.0.0',
@@ -42,7 +42,7 @@ for (const [name, title] of plugins) {
       pluginName: name,
       title,
       description: `${title} strategy for TX-5DR.`,
-      minPluginApiVersion: '2.4.0',
+      minPluginApiVersion: '2.5.0',
       author: 'TX-5DR',
       license: 'GPL-3.0-only',
       repository: 'https://github.com/boybook/tx-5dr-plugins',
@@ -59,7 +59,7 @@ for (const [name, title] of plugins) {
     },
     dependencies: {
       '@tx5dr/ft8-contest-family-shared': 'file:../shared/ft8-contest-family',
-      '@tx5dr/plugin-api': '^2.4.0',
+      '@tx5dr/plugin-api': '^2.5.0',
     },
     devDependencies: {
       '@types/node': '^22.0.0',

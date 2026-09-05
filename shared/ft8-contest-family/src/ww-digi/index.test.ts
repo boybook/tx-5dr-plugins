@@ -494,7 +494,7 @@ describe('WW Digi contest edition persistence', () => {
   });
 
   it('opens the contest log through an operator-bound standalone page entry', () => {
-    expect(wwDigiStrategyPlugin.minPluginApiVersion).toBe('2.4.0');
+    expect(wwDigiStrategyPlugin.minPluginApiVersion).toBe('2.5.0');
     expect(wwDigiStrategyPlugin.permissions).toEqual(expect.arrayContaining(['logbook:session', 'plugin:event-bus']));
     expect(wwDigiStrategyPlugin.panels).toContainEqual(expect.objectContaining({
       id: 'contest-log',
