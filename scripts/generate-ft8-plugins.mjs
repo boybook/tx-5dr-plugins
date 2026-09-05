@@ -43,8 +43,8 @@ for (const [name, title, catalogName] of plugins) {
     ? '@tx5dr/ft8-contest-family-shared/ww-digi'
     : '@tx5dr/ft8-contest-family-shared/ft-contests';
   const source = isWw
-    ? `import { wwDigiStrategyPlugin, wwDigiLocales } from '${importPath}';\n\nexport const plugin = { ...wwDigiStrategyPlugin, name: '${name}' };\nexport const locales = wwDigiLocales;\n\nexport default plugin;\n`
-    : `import { ftContestCatalog } from '${importPath}';\n\nconst entry = ftContestCatalog.find((candidate) => candidate.name === '${catalogName}');\nif (!entry) throw new Error('Missing contest catalog entry: ${catalogName}');\n\nexport const plugin = { ...entry.definition, name: '${name}' };\nexport const locales = entry.locales;\n\nexport default plugin;\n`;
+    ? `import type { AnyPluginDefinition } from '@tx5dr/plugin-api';\nimport { wwDigiStrategyPlugin, wwDigiLocales } from '${importPath}';\n\nexport const plugin: AnyPluginDefinition = { ...wwDigiStrategyPlugin, name: '${name}' };\nexport const locales = wwDigiLocales;\n\nexport default plugin;\n`
+    : `import type { AnyPluginDefinition } from '@tx5dr/plugin-api';\nimport { ftContestCatalog } from '${importPath}';\n\nconst entry = ftContestCatalog.find((candidate) => candidate.name === '${catalogName}');\nif (!entry) throw new Error('Missing contest catalog entry: ${catalogName}');\n\nexport const plugin: AnyPluginDefinition = { ...entry.definition, name: '${name}' };\nexport const locales = entry.locales;\n\nexport default plugin;\n`;
   const packageJson = {
     name: `tx5dr-plugin-${name}`,
     version: '1.0.0',
