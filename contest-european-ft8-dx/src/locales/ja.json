@@ -1,0 +1,7 @@
+{
+  "pluginName": "European FT8 DX Contest",
+  "pluginDescription": "FT8 DX contest using four-character Maidenhead grids on HF. 2026: 2026-04-11 12:00 UTC to 2026-04-12 11:59 UTC.",
+  "contestLogTitle": "コンテストログ",
+  "contestNewCallsign": "このバンドで未交信",
+  "contestNewMultiplier": "新マルチ"
+}

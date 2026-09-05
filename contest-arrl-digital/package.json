@@ -1,0 +1,59 @@
+{
+  "name": "tx5dr-plugin-contest-arrl-digital",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --legal-comments=none --outfile=dist/index.mjs && node ../scripts/copy-contest-ui.mjs"
+  },
+  "tx5drPlugin": {
+    "pluginName": "contest-arrl-digital",
+    "title": "ARRL International Digital Contest",
+    "description": "Digital contest using four-character Maidenhead grids on HF and 6M. 2026: 2026-06-06 18:00 UTC to 2026-06-07 23:59 UTC.",
+    "minPluginApiVersion": "2.5.0",
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/contest-arrl-digital",
+    "categories": [
+      "contest",
+      "ft8",
+      "ft4"
+    ],
+    "keywords": [
+      "amateur-radio",
+      "contest",
+      "contest-arrl-digital"
+    ],
+    "entry": "dist/index.mjs",
+    "include": [
+      {
+        "from": "dist/index.mjs",
+        "to": "index.mjs"
+      },
+      {
+        "from": "dist/ui",
+        "to": "ui"
+      },
+      {
+        "from": "dist/locales",
+        "to": "locales"
+      },
+      {
+        "from": "README.md",
+        "to": "README.md"
+      }
+    ]
+  },
+  "dependencies": {
+    "@tx5dr/ft8-contest-family-shared": "file:../shared/ft8-contest-family",
+    "@tx5dr/plugin-api": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0"
+  }
+}

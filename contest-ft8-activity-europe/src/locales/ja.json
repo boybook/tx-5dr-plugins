@@ -1,0 +1,7 @@
+{
+  "pluginName": "VHF-UHF FT8 Activity Europe",
+  "pluginDescription": "VHF/UHF FT8/FT4 activity contest using four-character Maidenhead grids. 2026: 2026-09-02 17:00 UTC to 2026-09-02 21:00 UTC.",
+  "contestLogTitle": "コンテストログ",
+  "contestNewCallsign": "このバンドで未交信",
+  "contestNewMultiplier": "新マルチ"
+}
