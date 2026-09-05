@@ -1,6 +1,6 @@
 {
   "pluginName": "European FT4 DX Contest",
-  "pluginDescription": "European FT4 DX Contest strategy for TX-5DR.",
+  "pluginDescription": "FT4 DX contest using four-character Maidenhead grids on HF. 2026: 2026-02-21 12:00 UTC to 2026-02-22 11:59 UTC.",
   "contestLogTitle": "Contest log",
   "contestNewCallsign": "New on band",
   "contestNewMultiplier": "New multiplier"

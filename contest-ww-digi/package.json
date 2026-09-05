@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-ww-digi",
     "title": "WW Digi",
-    "description": "WW Digi strategy for TX-5DR.",
+    "description": "FT8/FT4 DX contest using four-character Maidenhead grids across the HF bands. 2026: 2026-08-29 12:00 UTC to 2026-08-30 12:00 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",

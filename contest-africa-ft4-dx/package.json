@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-africa-ft4-dx",
     "title": "Africa FT4 DX Contest",
-    "description": "Africa FT4 DX Contest strategy for TX-5DR.",
+    "description": "FT4 DX contest using four-character Maidenhead grids and continent scoring. 2026: 2026-03-07 12:00 UTC to 2026-03-08 12:00 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",

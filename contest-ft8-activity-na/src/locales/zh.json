@@ -1,6 +1,6 @@
 {
   "pluginName": "VHF-UHF FT8 Activity-NA",
-  "pluginDescription": "TX-5DR VHF-UHF FT8 Activity-NA 比赛策略。",
+  "pluginDescription": "VHF/UHF FT8/FT4 activity contest using four-character Maidenhead grids. 2026: 2026-09-02 17:00 UTC to 2026-09-02 21:00 UTC.",
   "contestLogTitle": "比赛日志",
   "contestNewCallsign": "本波段新台",
   "contestNewMultiplier": "新系数"

@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-nccc-ft4-sprint",
     "title": "NCCC FT4 Sprint",
-    "description": "NCCC FT4 Sprint strategy for TX-5DR.",
+    "description": "Short FT4 activity sprint using four-character Maidenhead grids. 2026: 2026-09-04 01:00 UTC to 2026-09-04 03:00 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",

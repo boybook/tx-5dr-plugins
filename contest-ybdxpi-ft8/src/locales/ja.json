@@ -1,6 +1,6 @@
 {
   "pluginName": "YBDXPI FT8 Contest",
-  "pluginDescription": "TX-5DR YBDXPI FT8 Contest コンテスト戦略。",
+  "pluginDescription": "FT8 contest with grid exchange and Indonesia/DX/member scoring. 2026: 2026-10-24 00:00 UTC to 2026-10-25 23:59 UTC.",
   "contestLogTitle": "コンテストログ",
   "contestNewCallsign": "このバンドで未交信",
   "contestNewMultiplier": "新マルチ"

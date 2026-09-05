@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-rsgb-ft4-international-activity-day",
     "title": "RSGB FT4 International Activity Day",
-    "description": "RSGB FT4 International Activity Day strategy for TX-5DR.",
+    "description": "FT4 activity contest using grid exchange and continent/DXCC scoring. 2026: 2026-04-11 12:00 UTC to 2026-04-12 11:59 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",

@@ -1,6 +1,6 @@
 {
   "pluginName": "ARRL International Digital Contest",
-  "pluginDescription": "ARRL International Digital Contest strategy for TX-5DR.",
+  "pluginDescription": "Digital contest using four-character Maidenhead grids on HF and 6M. 2026: 2026-06-06 18:00 UTC to 2026-06-07 23:59 UTC.",
   "contestLogTitle": "Contest log",
   "contestNewCallsign": "New on band",
   "contestNewMultiplier": "New multiplier"

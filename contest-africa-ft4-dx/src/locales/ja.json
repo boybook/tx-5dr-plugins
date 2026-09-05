@@ -1,6 +1,6 @@
 {
   "pluginName": "Africa FT4 DX Contest",
-  "pluginDescription": "TX-5DR Africa FT4 DX Contest コンテスト戦略。",
+  "pluginDescription": "FT4 DX contest using four-character Maidenhead grids and continent scoring. 2026: 2026-03-07 12:00 UTC to 2026-03-08 12:00 UTC.",
   "contestLogTitle": "コンテストログ",
   "contestNewCallsign": "このバンドで未交信",
   "contestNewMultiplier": "新マルチ"

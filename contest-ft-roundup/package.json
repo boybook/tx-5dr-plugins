@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-ft-roundup",
     "title": "FT Roundup",
-    "description": "FT Roundup strategy for TX-5DR.",
+    "description": "FT4/FT8 contest using signal reports with state, province, or serial exchanges. 2026: 2026-12-05 18:00 UTC to 2026-12-06 23:59 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",

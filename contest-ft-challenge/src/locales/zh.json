@@ -1,6 +1,6 @@
 {
   "pluginName": "FT Challenge",
-  "pluginDescription": "TX-5DR FT Challenge 比赛策略。",
+  "pluginDescription": "FT4/FT8 contest using signal reports and four-character Maidenhead grids. 2026: 2026-12-05 00:00 UTC to 2026-12-06 23:59 UTC.",
   "contestLogTitle": "比赛日志",
   "contestNewCallsign": "本波段新台",
   "contestNewMultiplier": "新系数"

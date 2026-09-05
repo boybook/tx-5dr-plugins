@@ -18,6 +18,23 @@ const plugins = [
   ['contest-ww-digi', 'WW Digi', 'ww-digi'],
 ];
 
+const contestDescriptions = {
+  'arrl-digital': 'Digital contest using four-character Maidenhead grids on HF and 6M. 2026: 2026-06-06 18:00 UTC to 2026-06-07 23:59 UTC.',
+  'ft-roundup': 'FT4/FT8 contest using signal reports with state, province, or serial exchanges. 2026: 2026-12-05 18:00 UTC to 2026-12-06 23:59 UTC.',
+  'ft-challenge': 'FT4/FT8 contest using signal reports and four-character Maidenhead grids. 2026: 2026-12-05 00:00 UTC to 2026-12-06 23:59 UTC.',
+  'european-ft8-dx': 'FT8 DX contest using four-character Maidenhead grids on HF. 2026: 2026-04-11 12:00 UTC to 2026-04-12 11:59 UTC.',
+  'european-ft4-dx': 'FT4 DX contest using four-character Maidenhead grids on HF. 2026: 2026-02-21 12:00 UTC to 2026-02-22 11:59 UTC.',
+  'rsgb-ft4-international-activity-day': 'FT4 activity contest using grid exchange and continent/DXCC scoring. 2026: 2026-04-11 12:00 UTC to 2026-04-12 11:59 UTC.',
+  'rsgb-ft4-contest-series': 'RSGB FT4 contest series using grid exchange on 80M. 2026 range: 2026-01-01 00:00 UTC to 2026-12-31 23:59 UTC.',
+  'ft8-activity-europe': 'VHF/UHF FT8/FT4 activity contest using four-character Maidenhead grids. 2026: 2026-09-02 17:00 UTC to 2026-09-02 21:00 UTC.',
+  'ft8-activity-na': 'VHF/UHF FT8/FT4 activity contest using four-character Maidenhead grids. 2026: 2026-09-02 17:00 UTC to 2026-09-02 21:00 UTC.',
+  'nccc-ft4-sprint': 'Short FT4 activity sprint using four-character Maidenhead grids. 2026: 2026-09-04 01:00 UTC to 2026-09-04 03:00 UTC.',
+  'batavia-ft8': 'FT8 contest with grid exchange and member-aware country and prefix scoring. 2026: 2026-08-01 00:00 UTC to 2026-08-02 23:59 UTC.',
+  'ybdxpi-ft8': 'FT8 contest with grid exchange and Indonesia/DX/member scoring. 2026: 2026-10-24 00:00 UTC to 2026-10-25 23:59 UTC.',
+  'africa-ft4-dx': 'FT4 DX contest using four-character Maidenhead grids and continent scoring. 2026: 2026-03-07 12:00 UTC to 2026-03-08 12:00 UTC.',
+  'ww-digi': 'FT8/FT4 DX contest using four-character Maidenhead grids across the HF bands. 2026: 2026-08-29 12:00 UTC to 2026-08-30 12:00 UTC.',
+};
+
 const root = process.cwd();
 for (const [name, title, catalogName] of plugins) {
   const dir = join(root, name);
@@ -41,7 +58,7 @@ for (const [name, title, catalogName] of plugins) {
     tx5drPlugin: {
       pluginName: name,
       title,
-      description: `${title} strategy for TX-5DR.`,
+      description: contestDescriptions[catalogName] ?? `${title} strategy for TX-5DR.`,
       minPluginApiVersion: '2.5.0',
       author: 'TX-5DR',
       license: 'GPL-3.0-only',
@@ -83,15 +100,15 @@ for (const [name, title, catalogName] of plugins) {
     include: ['src'],
   };
   const locales = {
-    en: { pluginName: title, pluginDescription: `${title} strategy for TX-5DR.`, contestLogTitle: 'Contest log', contestNewCallsign: 'New on band', contestNewMultiplier: 'New multiplier' },
-    zh: { pluginName: title, pluginDescription: `TX-5DR ${title} 比赛策略。`, contestLogTitle: '比赛日志', contestNewCallsign: '本波段新台', contestNewMultiplier: '新系数' },
-    ja: { pluginName: title, pluginDescription: `TX-5DR ${title} コンテスト戦略。`, contestLogTitle: 'コンテストログ', contestNewCallsign: 'このバンドで未交信', contestNewMultiplier: '新マルチ' },
+    en: { pluginName: title, pluginDescription: contestDescriptions[catalogName], contestLogTitle: 'Contest log', contestNewCallsign: 'New on band', contestNewMultiplier: 'New multiplier' },
+    zh: { pluginName: title, pluginDescription: contestDescriptions[catalogName], contestLogTitle: '比赛日志', contestNewCallsign: '本波段新台', contestNewMultiplier: '新系数' },
+    ja: { pluginName: title, pluginDescription: contestDescriptions[catalogName], contestLogTitle: 'コンテストログ', contestNewCallsign: 'このバンドで未交信', contestNewMultiplier: '新マルチ' },
   };
   mkdirSync(join(dir, 'src/locales'), { recursive: true });
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`);
   writeFileSync(join(dir, 'tsconfig.json'), `${JSON.stringify(tsconfig, null, 2)}\n`);
   writeFileSync(join(dir, 'src/index.ts'), source);
   for (const [locale, values] of Object.entries(locales)) writeFileSync(join(dir, 'src/locales', `${locale}.json`), `${JSON.stringify(values, null, 2)}\n`);
-  writeFileSync(join(dir, 'README.md'), `# ${title}\n\nOfficial TX-5DR Marketplace strategy plugin for the ${title}.\n\nThis artifact uses the shared FT8/FT4 contest session, logbook UI, standard QSO runtime, contest scoring projection, ADIF import/export, and official submission format.\n`);
+  writeFileSync(join(dir, 'README.md'), `# ${title}\n\nOfficial TX-5DR Marketplace strategy plugin for the ${title}.\n\n${contestDescriptions[catalogName] ?? ''}\n\nThis artifact uses the shared FT8/FT4 contest session, logbook UI, standard QSO runtime, contest scoring projection, ADIF import/export, and official submission format.\n`);
 }
 console.log(`Generated ${plugins.length} FT8/FT4 Marketplace plugin package(s).`);

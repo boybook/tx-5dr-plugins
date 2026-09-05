@@ -11,7 +11,7 @@
   "tx5drPlugin": {
     "pluginName": "contest-arrl-digital",
     "title": "ARRL International Digital Contest",
-    "description": "ARRL International Digital Contest strategy for TX-5DR.",
+    "description": "Digital contest using four-character Maidenhead grids on HF and 6M. 2026: 2026-06-06 18:00 UTC to 2026-06-07 23:59 UTC.",
     "minPluginApiVersion": "2.5.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
