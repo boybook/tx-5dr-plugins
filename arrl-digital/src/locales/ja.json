@@ -1,7 +1,0 @@
-{
-  "pluginName": "ARRL International Digital Contest",
-  "pluginDescription": "TX-5DR ARRL International Digital Contest コンテスト戦略。",
-  "contestLogTitle": "コンテストログ",
-  "contestNewCallsign": "このバンドで未交信",
-  "contestNewMultiplier": "新マルチ"
-}

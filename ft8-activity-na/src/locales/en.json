@@ -1,7 +1,0 @@
-{
-  "pluginName": "VHF-UHF FT8 Activity-NA",
-  "pluginDescription": "VHF-UHF FT8 Activity-NA strategy for TX-5DR.",
-  "contestLogTitle": "Contest log",
-  "contestNewCallsign": "New on band",
-  "contestNewMultiplier": "New multiplier"
-}
