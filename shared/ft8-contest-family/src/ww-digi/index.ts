@@ -899,7 +899,7 @@ export const wwDigiQuickSettings: PluginQuickSetting[] = [
 const wwDigiBasePlugin = definePlugin({
   apiVersion: 2,
   name: BUILTIN_WW_DIGI_PLUGIN_NAME,
-  version: '1.0.0',
+  version: '1.0.1',
   type: 'strategy',
   description: 'WW Digi FT8/FT4 contest workflow with operator-selected parallel QSOs',
   strategyFeatures: {
@@ -1494,6 +1494,7 @@ const wwDigiContestLogbook = defaultContestLogbook({
   }),
   sessionKey: (_contest, context) => contestLogbookSessionKey(configuredContestYear(context.config.contestYear)),
   stateKey: (_contest, context) => sessionKey(context.operator.callsign, configuredContestYear(context.config.contestYear)),
+  stateScope: 'global',
   deferStartup: true,
 });
 
