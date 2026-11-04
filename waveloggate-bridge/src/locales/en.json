@@ -1,0 +1,22 @@
+{
+  "pluginName": "WaveLog Bridge",
+  "pluginDescription": "Syncs TX-5DR radio frequency and mode to WaveLog in real time, and tunes the radio when a WaveLog Bandmap spot is clicked.",
+  "apiUrlLabel": "WaveLog API URL",
+  "apiUrlDescription": "Your own WaveLog address, e.g. https://log.example.com. /index.php/api/radio is appended if missing. Leave empty to disable reporting.",
+  "apiKeyLabel": "API Key",
+  "apiKeyDescription": "Read/write key created in WaveLog under Admin → API.",
+  "radioNameLabel": "Radio name",
+  "radioNameDescription": "Name shown in the WaveLog hardware interfaces list.",
+  "pollIntervalLabel": "Poll interval (ms)",
+  "pollIntervalDescription": "How often to check the radio for frequency and mode changes.",
+  "heartbeatLabel": "Heartbeat (seconds)",
+  "heartbeatDescription": "Re-send the unchanged state at this interval so WaveLog keeps the radio active. 0 disables it.",
+  "callbackEnabledLabel": "Enable Bandmap click-to-tune",
+  "callbackEnabledDescription": "Listen locally for WaveLog tune callbacks.",
+  "callbackHostLabel": "Callback listen address",
+  "callbackHostDescription": "127.0.0.1 by default (same computer only). Use 0.0.0.0 if the browser runs on another computer.",
+  "callbackPortLabel": "Callback listen port",
+  "callbackPortDescription": "Must match the port in the radio's CAT URL in WaveLog. Default 54321.",
+  "snapDigitalDialLabel": "Snap FT8/FT4 to dial frequency",
+  "snapDigitalDialDescription": "In FT8/FT4 mode, a spot within 0–3.5 kHz above a standard dial frequency tunes to that dial frequency (e.g. 14.074 MHz)."
+}
