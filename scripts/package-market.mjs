@@ -1,49 +1,32 @@
 #!/usr/bin/env node
 
+// Builds one deterministic archive per plugin plus `candidates.json`. It never
+// publishes; `publish-market.mjs` decides which candidates are new versions.
+
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import {
+  artifactsRoot,
+  assertStrictSemver,
+  getPluginDirs,
+  git,
+  isObject,
+  pathExists,
+  readJson,
+  rootDir,
+  writeJson,
+} from './lib/market.mjs';
 
-const rootDir = process.cwd();
-const args = process.argv.slice(2);
-
-function readFlag(name, fallback) {
-  const index = args.indexOf(name);
-  if (index === -1 || index === args.length - 1) {
-    return fallback;
-  }
-  return args[index + 1];
-}
-
-const channel = readFlag('--channel', 'nightly');
-const baseUrl = readFlag('--base-url', 'https://dl.tx5dr.com/plugins/market').replace(/\/+$/, '');
-const outputDir = path.join(rootDir, '.artifacts', 'market', channel);
-const artifactsDir = path.join(outputDir, 'artifacts');
+const artifactsDir = path.join(artifactsRoot, 'artifacts');
 const stagingRoot = path.join(rootDir, '.artifacts', 'staging');
 const README_MAX_BYTES = 100 * 1024;
 const RUNTIME_ENTRY_CANDIDATES = ['plugin.js', 'index.js', 'index.mjs'];
 const ARTIFACT_MANIFEST_FILE = 'tx5dr-plugin.json';
-const STRICT_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
-
-if (!['stable', 'nightly'].includes(channel)) {
-  throw new Error(`Unsupported channel: ${channel}`);
-}
-
-function isObject(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function assertStrictSemver(value, label) {
-  if (typeof value !== 'string' || !STRICT_SEMVER_PATTERN.test(value)) {
-    throw new Error(`${label} must be a strict semantic version`);
-  }
-}
-
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, 'utf8'));
-}
+// 1980-01-01 is the earliest ZIP timestamp; fixed times keep archives reproducible.
+const FIXED_MTIME = new Date('1980-01-01T00:00:00Z');
 
 async function readPluginReadme(pluginDir) {
   const readmePath = path.join(pluginDir, 'README.md');
@@ -105,44 +88,6 @@ async function readLocales(localesDir) {
   return locales;
 }
 
-async function pathExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function getPluginDirs() {
-  const entries = await fs.readdir(rootDir, { withFileTypes: true });
-  const pluginDirs = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    if (entry.name.startsWith('.')) {
-      continue;
-    }
-    if (entry.name === 'scripts') {
-      continue;
-    }
-    const packageJsonPath = path.join(rootDir, entry.name, 'package.json');
-    if (!await pathExists(packageJsonPath)) {
-      continue;
-    }
-    const pkg = await readJson(packageJsonPath);
-    if (!isObject(pkg.tx5drPlugin)) {
-      continue;
-    }
-    pluginDirs.push(path.join(rootDir, entry.name));
-  }
-  if (pluginDirs.length === 0) {
-    throw new Error('No plugin directories with package.json were found');
-  }
-  return pluginDirs.sort();
-}
-
 async function copyRecursive(source, target) {
   const stat = await fs.stat(source);
   if (stat.isDirectory()) {
@@ -157,13 +102,42 @@ async function copyRecursive(source, target) {
   await fs.copyFile(source, target);
 }
 
-async function buildCatalogEntry(pluginDir) {
+async function listFiles(directory, prefix = '') {
+  const files = [];
+  const entries = await fs.readdir(path.join(directory, prefix), { withFileTypes: true });
+  for (const entry of entries) {
+    const relative = path.posix.join(prefix, entry.name);
+    if (entry.isDirectory()) files.push(...await listFiles(directory, relative));
+    else files.push(relative);
+  }
+  return files;
+}
+
+/** Sorted entries, fixed timestamps and no extra attributes give stable bytes. */
+async function writeDeterministicZip(stageDir, zipPath) {
+  const files = (await listFiles(stageDir)).sort();
+  for (const file of files) await fs.utimes(path.join(stageDir, file), FIXED_MTIME, FIXED_MTIME);
+  await fs.mkdir(path.dirname(zipPath), { recursive: true });
+  await fs.rm(zipPath, { force: true });
+  const result = spawnSync('zip', ['-q', '-X', '-D', zipPath, '-@'], {
+    cwd: stageDir,
+    input: `${files.join('\n')}\n`,
+    stdio: ['pipe', 'inherit', 'inherit'],
+    env: { ...process.env, TZ: 'UTC' },
+  });
+  if (result.status !== 0) {
+    throw new Error(`zip command failed for ${zipPath}`);
+  }
+}
+
+async function buildCandidate(pluginDir) {
   const pkg = await readJson(path.join(pluginDir, 'package.json'));
   const meta = pkg.tx5drPlugin;
 
   if (!isObject(meta)) {
     throw new Error(`Missing tx5drPlugin metadata for plugin ${pluginDir}`);
   }
+  assertStrictSemver(pkg.version, `Plugin ${meta.pluginName ?? pluginDir} package version`);
   assertStrictSemver(
     meta.minPluginApiVersion,
     `Plugin ${meta.pluginName ?? pluginDir} package minPluginApiVersion`,
@@ -246,70 +220,52 @@ async function buildCatalogEntry(pluginDir) {
     'utf8',
   );
 
-  const zipFileName = `${meta.pluginName}-${pkg.version}.zip`;
-  const zipPath = path.join(artifactsDir, zipFileName);
-  await fs.mkdir(artifactsDir, { recursive: true });
-  const zipResult = spawnSync('zip', ['-qr', zipPath, '.'], {
-    cwd: stageDir,
-    stdio: 'inherit',
-  });
-  if (zipResult.status !== 0) {
-    throw new Error(`zip command failed for ${meta.pluginName}`);
-  }
-
+  const zipPath = path.join(artifactsDir, meta.pluginName, `${pkg.version}.zip`);
+  await writeDeterministicZip(stageDir, zipPath);
   const artifactBytes = await fs.readFile(zipPath);
-  const sha256 = createHash('sha256').update(artifactBytes).digest('hex');
-  const stat = await fs.stat(zipPath);
   const locales = await readLocales(path.join(stageDir, 'locales'));
-  const readmeMarkdown = await readPluginReadme(pluginDir);
-  const readmeSourceUrl = buildReadmeSourceUrl(meta.repository, pluginDir);
 
   return {
     name: meta.pluginName,
-    title: meta.title,
-    description: meta.description,
-    readmeMarkdown,
-    readmeSourceUrl,
-    locales: Object.keys(locales).length > 0 ? locales : undefined,
-    latestVersion: pkg.version,
-    minPluginApiVersion: meta.minPluginApiVersion,
-    author: meta.author,
-    license: meta.license ?? 'GPL-3.0-only',
-    repository: meta.repository,
-    homepage: meta.homepage,
-    categories: Array.isArray(meta.categories) ? meta.categories : [],
-    keywords: Array.isArray(meta.keywords) ? meta.keywords : [],
-    permissions: Array.isArray(plugin.permissions) ? plugin.permissions : [],
-    screenshots: Array.isArray(meta.screenshots) ? meta.screenshots : [],
-    artifactUrl: `${baseUrl}/${channel}/artifacts/${zipFileName}`,
-    sha256,
-    size: stat.size,
-    publishedAt: new Date().toISOString(),
-    artifactManifestVersion: 1,
+    pluginDir: path.relative(rootDir, pluginDir),
+    meta: {
+      title: meta.title,
+      description: meta.description,
+      readmeMarkdown: await readPluginReadme(pluginDir),
+      readmeSourceUrl: buildReadmeSourceUrl(meta.repository, pluginDir),
+      locales: Object.keys(locales).length > 0 ? locales : undefined,
+      author: meta.author,
+      license: meta.license ?? 'GPL-3.0-only',
+      repository: meta.repository,
+      homepage: meta.homepage,
+      categories: Array.isArray(meta.categories) ? meta.categories : [],
+      keywords: Array.isArray(meta.keywords) ? meta.keywords : [],
+      screenshots: Array.isArray(meta.screenshots) ? meta.screenshots : [],
+    },
+    version: {
+      version: pkg.version,
+      minPluginApiVersion: meta.minPluginApiVersion,
+      permissions: artifactManifest.permissions,
+      sha256: createHash('sha256').update(artifactBytes).digest('hex'),
+      size: artifactBytes.length,
+      artifactManifestVersion: 1,
+    },
+    archive: path.relative(rootDir, zipPath),
   };
 }
 
-await fs.rm(outputDir, { recursive: true, force: true });
+await fs.rm(artifactsRoot, { recursive: true, force: true });
 await fs.rm(stagingRoot, { recursive: true, force: true });
 await fs.mkdir(artifactsDir, { recursive: true });
 
-const pluginDirs = await getPluginDirs();
-const plugins = [];
-for (const pluginDir of pluginDirs) {
-  plugins.push(await buildCatalogEntry(pluginDir));
+const candidates = [];
+for (const pluginDir of await getPluginDirs()) {
+  candidates.push(await buildCandidate(pluginDir));
 }
 
-const catalog = {
-  schemaVersion: 2,
-  generatedAt: new Date().toISOString(),
-  channel,
-  plugins: plugins.sort((left, right) => left.name.localeCompare(right.name)),
-};
+await writeJson(path.join(artifactsRoot, 'candidates.json'), {
+  sourceCommit: git(['rev-parse', 'HEAD']),
+  candidates: candidates.sort((left, right) => left.name.localeCompare(right.name)),
+});
 
-await fs.writeFile(
-  path.join(outputDir, 'index.json'),
-  `${JSON.stringify(catalog, null, 2)}\n`,
-  'utf8',
-);
-
-console.log(`Packaged ${plugins.length} plugin(s) for ${channel}: ${outputDir}`);
+console.log(`Packaged ${candidates.length} plugin candidate(s): ${artifactsRoot}`);

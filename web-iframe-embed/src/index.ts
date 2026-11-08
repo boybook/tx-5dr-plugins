@@ -196,9 +196,10 @@ function notifyConfigUpdated(ctx: PluginContext): void {
 }
 
 const plugin: MarketplacePluginDefinition = {
+  apiVersion: 2,
   name: WEB_IFRAME_EMBED_PLUGIN_NAME,
-  version: '1.2.3',
-  minPluginApiVersion: '1.7.9',
+  version: '1.3.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   description: 'pluginDescription',
 

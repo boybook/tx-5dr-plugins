@@ -43,9 +43,10 @@ function reset(ctx: PluginContext): void {
 }
 
 export const heartbeatDemoPlugin: MarketplacePluginDefinition = {
+  apiVersion: 2,
   name: 'heartbeat-demo',
-  version: '1.0.0',
-  minPluginApiVersion: '1.2.0',
+  version: '1.1.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   description: 'Demonstrate plugin timers, global storage, panels, and button quick actions',
 

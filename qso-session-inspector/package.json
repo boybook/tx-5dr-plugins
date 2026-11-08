@@ -1,6 +1,6 @@
 {
   "name": "tx5dr-plugin-qso-session-inspector",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
     "pluginName": "qso-session-inspector",
     "title": "QSO Session Inspector",
     "description": "Tracks slot, decode, and QSO lifecycle events for inspection and debugging.",
-    "minPluginApiVersion": "1.2.0",
+    "minPluginApiVersion": "2.0.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",
@@ -44,7 +44,7 @@
     ]
   },
   "devDependencies": {
-    "@tx5dr/plugin-api": "^1.2.0",
+    "@tx5dr/plugin-api": "^2.0.0",
     "typescript": "^5.0.0"
   }
 }

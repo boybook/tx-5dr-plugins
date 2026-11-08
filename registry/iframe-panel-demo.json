@@ -1,0 +1,66 @@
+{
+  "name": "iframe-panel-demo",
+  "meta": {
+    "title": "Iframe Panel Demo",
+    "description": "Demonstrates iframe-backed plugin panels and session messaging.",
+    "readmeMarkdown": "# iframe-panel-demo\n\nMigrated from TX-5DR builtin plugins.\n\nThis utility plugin demonstrates:\n\n- iframe-backed plugin panels\n- operator-scoped storage\n- page session messaging\n- automation popover UI panels\n\n## Build\n\n```bash\nnpm install\nnpm run build\n```\n",
+    "readmeSourceUrl": "https://github.com/boybook/tx-5dr-plugins/blob/main/iframe-panel-demo/README.md",
+    "locales": {
+      "en": {
+        "pluginName": "iframe Panel Demo",
+        "pluginDescription": "Demonstrates iframe custom UI panels in operator card and automation popover.",
+        "liveMonitorPanel": "Live Monitor",
+        "quickControlsPanel": "Quick Controls",
+        "statsPanel": "Stats",
+        "liveMonitorPage": "Live Monitor",
+        "quickControlsPage": "Quick Controls",
+        "uiLabelPlaceholder": "Label",
+        "uiSetLabel": "Set",
+        "uiIncrement": "+1",
+        "uiReset": "Reset",
+        "uiSignalLog": "Signal: {{value}} dBm"
+      },
+      "zh": {
+        "pluginName": "iframe 面板演示",
+        "pluginDescription": "演示 iframe 自定义 UI 面板在操作员卡片和自动化面板中的使用。",
+        "liveMonitorPanel": "实时监控",
+        "quickControlsPanel": "快捷控制",
+        "statsPanel": "统计信息",
+        "liveMonitorPage": "实时监控",
+        "quickControlsPage": "快捷控制",
+        "uiLabelPlaceholder": "标签",
+        "uiSetLabel": "设置",
+        "uiIncrement": "+1",
+        "uiReset": "重置",
+        "uiSignalLog": "信号：{{value}} dBm"
+      }
+    },
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/iframe-panel-demo",
+    "categories": [
+      "demo",
+      "ui"
+    ],
+    "keywords": [
+      "iframe",
+      "panel",
+      "ui"
+    ],
+    "screenshots": []
+  },
+  "versions": [
+    {
+      "version": "1.0.1",
+      "minPluginApiVersion": "1.2.0",
+      "permissions": [],
+      "sha256": "9ddf0708678c17a560062d269ecbf1dbf2de4e7275b16a39f586ddc7f3e971b8",
+      "size": 53538,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/nightly/artifacts/iframe-panel-demo-1.0.1.zip",
+      "publishedAt": "2026-11-02T05:42:19.955Z",
+      "sourceCommit": "71c6e4c3bf0ce87dff298e3c78506865f860a99a"
+    }
+  ]
+}

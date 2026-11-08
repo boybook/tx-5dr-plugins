@@ -296,7 +296,10 @@ function contestPlugin<TExchange, TQso extends FT8ContestQso<TExchange>>(
 ): AnyPluginDefinition {
   return composeFT8ContestPlugin({
     name,
-    version: '1.0.0',
+    version: '1.0.1',
+    // The marketplace artifacts bundle this package's @tx5dr/plugin-api
+    // (^2.6.0), so the declared floor must match it, not the toolkit default.
+    minPluginApiVersion: '2.6.0',
     description: 'pluginDescription',
     settings: standardQSOSettings,
     quickSettings: standardQSOQuickSettings,

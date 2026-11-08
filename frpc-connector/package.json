@@ -1,15 +1,18 @@
 {
   "name": "bd8ftc-frpc-connector",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "build": "node -e \"console.log('no build needed')\""
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^2.0.0"
   },
   "tx5drPlugin": {
     "pluginName": "bd8ftc-frpc-connector",
     "title": "websdr.bd8ftc.de FRP穿透服务",
     "description": "接入 websdr.bd8ftc.de FRP穿透服务，按登记呼号下载专属 frpc 配置，并启动本机 frpc 客户端。",
-    "minPluginApiVersion": "1.0.0",
+    "minPluginApiVersion": "2.0.0",
     "entry": "src/index.js",
     "include": [
       { "from": "src/index.js", "to": "index.js" },

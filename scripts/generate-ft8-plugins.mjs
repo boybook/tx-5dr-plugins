@@ -35,9 +35,24 @@ const contestDescriptions = {
   'ww-digi': 'FT8/FT4 DX contest using four-character Maidenhead grids across the HF bands. 2026: 2026-08-29 12:00 UTC to 2026-08-30 12:00 UTC.',
 };
 
+// Package version and Plugin API floor per generated package. Each artifact
+// bundles the toolkit that shared/ft8-contest-family resolves, so the floor
+// can never be lower than that package's @tx5dr/plugin-api range. It is written
+// to tx5drPlugin.minPluginApiVersion and to the dependency range (^floor), and
+// must equal the runtime definition's minPluginApiVersion
+// (shared/ft8-contest-family/src/ft-contests.ts and ww-digi/index.ts); keep the
+// versions in step with the runtime definitions as well.
+const DEFAULT_PACKAGE_VERSION = '1.0.1';
+const DEFAULT_MIN_PLUGIN_API_VERSION = '2.6.0';
+const packageOverrides = {
+  'contest-ww-digi': { version: '1.0.2' },
+};
+
 const root = process.cwd();
 for (const [name, title, catalogName] of plugins) {
   const dir = join(root, name);
+  const packageVersion = packageOverrides[name]?.version ?? DEFAULT_PACKAGE_VERSION;
+  const minPluginApiVersion = packageOverrides[name]?.minPluginApiVersion ?? DEFAULT_MIN_PLUGIN_API_VERSION;
   const isWw = catalogName === 'ww-digi';
   const importPath = isWw
     ? '@tx5dr/ft8-contest-family-shared/ww-digi'
@@ -47,7 +62,7 @@ for (const [name, title, catalogName] of plugins) {
     : `import type { AnyPluginDefinition } from '@tx5dr/plugin-api';\nimport { ftContestCatalog } from '${importPath}';\n\nconst entry = ftContestCatalog.find((candidate) => candidate.name === '${catalogName}');\nif (!entry) throw new Error('Missing contest catalog entry: ${catalogName}');\n\nexport const plugin: AnyPluginDefinition = { ...entry.definition, name: '${name}' };\nexport const locales = entry.locales;\n\nexport default plugin;\n`;
   const packageJson = {
     name: `tx5dr-plugin-${name}`,
-    version: '1.0.0',
+    version: packageVersion,
     private: true,
     type: 'module',
     main: 'dist/index.mjs',
@@ -59,7 +74,7 @@ for (const [name, title, catalogName] of plugins) {
       pluginName: name,
       title,
       description: contestDescriptions[catalogName] ?? `${title} strategy for TX-5DR.`,
-      minPluginApiVersion: '2.5.0',
+      minPluginApiVersion,
       author: 'TX-5DR',
       license: 'GPL-3.0-only',
       repository: 'https://github.com/boybook/tx-5dr-plugins',
@@ -76,7 +91,7 @@ for (const [name, title, catalogName] of plugins) {
     },
     dependencies: {
       '@tx5dr/ft8-contest-family-shared': 'file:../shared/ft8-contest-family',
-      '@tx5dr/plugin-api': '^2.5.0',
+      '@tx5dr/plugin-api': `^${minPluginApiVersion}`,
     },
     devDependencies: {
       '@types/node': '^22.0.0',

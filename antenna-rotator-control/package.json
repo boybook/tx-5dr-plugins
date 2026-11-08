@@ -1,6 +1,6 @@
 {
   "name": "tx5dr-plugin-antenna-rotator-control",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "pluginName": "antenna-rotator-control",
     "title": "Antenna Rotator Control",
     "description": "Controls Hamlib-compatible azimuth antenna rotators from the RadioControl toolbar.",
-    "minPluginApiVersion": "1.7.8",
+    "minPluginApiVersion": "2.0.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",
@@ -56,7 +56,7 @@
     ]
   },
   "devDependencies": {
-    "@tx5dr/plugin-api": "^1.7.8",
+    "@tx5dr/plugin-api": "^2.0.0",
     "@types/node": "^22.15.21",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",

@@ -1,45 +1,54 @@
 name: Deploy
 
+# Publishes new plugin versions from main. A plugin version is published once,
+# as an immutable archive, and recorded in registry/. Hosts pick the newest
+# version compatible with their bundled Plugin API from index.json.
+#
+# Do not roll back by reverting this workflow: the previous channel workflow
+# overwrote nightly/artifacts/*.zip, which registry entries reference by hash.
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      channel:
-        description: Release channel
-        required: true
-        default: stable
-        type: choice
-        options:
-          - stable
-          - nightly
 
 permissions:
   contents: read
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    outputs:
-      channel: ${{ steps.channel.outputs.value }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# Runs are serialized, so each run starts after the previous registry commit.
+concurrency:
+  group: plugin-market-publish
+  cancel-in-progress: false
 
-      - name: Resolve channel
-        id: channel
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "value=nightly" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ inputs.channel }}" >> "$GITHUB_OUTPUT"
-          fi
+jobs:
+  # Builds third-party plugin code without write credentials.
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record source commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Test marketplace tooling
+        run: node --test scripts/tests/
 
       - name: Validate marketplace contract
         run: node scripts/validate-marketplace.mjs
@@ -47,39 +56,86 @@ jobs:
       - name: Build plugins
         run: node scripts/build-plugins.mjs
 
-      - name: Package catalog
-        run: node scripts/package-market.mjs --channel ${{ steps.channel.outputs.value }} --base-url https://dl.tx5dr.com/plugins/market
+      - name: Package candidates
+        run: node scripts/package-market.mjs
 
-      - name: Upload market artifact
+      - name: Check generated catalogs against released Hosts
+        run: |
+          node scripts/publish-market.mjs --dry-run --base-url https://dl.tx5dr.com/plugins/market
+          node scripts/check-catalog-compat.mjs
+
+      - name: Upload candidates
         uses: actions/upload-artifact@v4
         with:
-          name: market-${{ steps.channel.outputs.value }}
-          path: .artifacts/market/${{ steps.channel.outputs.value }}
-          retention-days: 1
+          name: market-candidates
+          path: |
+            .artifacts/market/candidates.json
+            .artifacts/market/artifacts
+          retention-days: 7
 
-  deploy-aliyun:
-    runs-on: ubuntu-latest
+  # Uploads archives and commits the registry; runs no plugin code.
+  publish:
     needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       OSS_BUCKET: tx5dr
       OSS_REGION: oss-cn-hangzhou
+      MARKET_BASE_URL: https://dl.tx5dr.com/plugins/market
     steps:
-      - name: Download market artifact
+      - name: Checkout built commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download candidates
         uses: actions/download-artifact@v4
         with:
-          name: market-${{ needs.build.outputs.channel }}
-          path: market
+          name: market-candidates
+          path: .artifacts/market
 
       - name: Install OSSUtil
-        run: |
-          curl -fL -o /tmp/ossutil64 https://gosspublic.alicdn.com/ossutil/1.7.8/ossutil64
-          chmod +x /tmp/ossutil64
-          sudo mv /tmp/ossutil64 /usr/local/bin/ossutil
-
-      - name: Upload to Aliyun OSS
         env:
           OSS_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
           OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
         run: |
+          curl -fL -o /tmp/ossutil64 https://gosspublic.alicdn.com/ossutil/1.7.8/ossutil64
+          chmod +x /tmp/ossutil64
+          sudo mv /tmp/ossutil64 /usr/local/bin/ossutil
           ossutil config -e ${OSS_REGION}.aliyuncs.com -i ${OSS_ACCESS_KEY_ID} -k ${OSS_ACCESS_KEY_SECRET}
-          ossutil cp -r ./market oss://${OSS_BUCKET}/plugins/market/${{ needs.build.outputs.channel }}/ --force
+
+      - name: Publish new plugin versions
+        run: node scripts/publish-market.mjs artifacts --upload --base-url "$MARKET_BASE_URL"
+
+      # The index is uploaded only after the registry commit lands, so every
+      # listed version is recorded in Git.
+      - name: Commit registry
+        run: |
+          if [ -z "$(git status --porcelain -- registry)" ]; then
+            echo "Registry unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add registry
+          git commit -m "chore(registry): record published plugin versions [skip ci]"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 5))
+          done
+          echo "Failed to push registry update" >&2
+          exit 1
+
+      - name: Publish marketplace index
+        run: node scripts/publish-market.mjs index --upload --base-url "$MARKET_BASE_URL"

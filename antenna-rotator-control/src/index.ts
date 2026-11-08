@@ -23,6 +23,10 @@ const PLUGIN_NAME = 'antenna-rotator-control';
 const PAGE_ID = 'rotator';
 const CONFIG_KEY = 'rotatorConfig';
 const POLL_TIMER_ID = 'rotator-position-poll';
+// The Host aborts a timer hook after 5 s and disables an instance that does not
+// settle within the grace period. Native Hamlib calls ignore abort signals, so
+// the hook stops waiting earlier; the `polling` guard skips overlapping polls.
+const POLL_HOOK_DEADLINE_MS = 3500;
 const MAX_LOG_ENTRIES = 80;
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'moving' | 'error';
@@ -394,7 +398,20 @@ class RotatorService {
     if (timerId !== POLL_TIMER_ID) {
       return;
     }
-    await this.pollPosition();
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Promise<'timeout'>((resolve) => {
+      deadline = setTimeout(() => resolve('timeout'), POLL_HOOK_DEADLINE_MS);
+    });
+    try {
+      const result = await Promise.race([this.pollPosition().then(() => 'done' as const), timedOut]);
+      if (result === 'timeout') {
+        // The late poll may still finish; its Host handle calls then fail and
+        // are caught by pollPosition, and the next timer tick polls again.
+        this.log('warn', 'position_poll_slow', `exceeded ${POLL_HOOK_DEADLINE_MS} ms`);
+      }
+    } finally {
+      clearTimeout(deadline);
+    }
   }
 
   async pollPosition(): Promise<void> {
@@ -533,7 +550,18 @@ class RotatorService {
     if (!this.ctx) {
       return;
     }
-    for (const session of this.ctx.ui.listActivePageSessions(PAGE_ID)) {
+    // ctx.ui is an invocation-scoped Host handle: it only works while a Host
+    // callback (page handler, timer, lifecycle hook) is still running. A push
+    // that misses that window must not turn a successful hardware operation
+    // into a failure; the next poll or bootstrap request resends the state.
+    let sessions: ReturnType<PluginContext['ui']['listActivePageSessions']>;
+    try {
+      sessions = this.ctx.ui.listActivePageSessions(PAGE_ID);
+    } catch (error) {
+      this.ctx.log.warn('Failed to list rotator page sessions', { error: errorMessage(error) });
+      return;
+    }
+    for (const session of sessions) {
       try {
         this.ctx.ui.pushToSession(session.sessionId, 'stateUpdated', this.getSnapshot());
       } catch (error) {
@@ -607,8 +635,8 @@ async function handlePageMessage(action: string, data: unknown): Promise<unknown
 const plugin: HamlibPluginDefinition = {
   apiVersion: 2,
   name: PLUGIN_NAME,
-  version: '0.1.1',
-  minPluginApiVersion: '1.7.8',
+  version: '0.2.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   instanceScope: 'global',
   permissions: ['host:hamlib'],
@@ -656,7 +684,10 @@ const plugin: HamlibPluginDefinition = {
   },
   hooks: {
     onTimer(timerId) {
-      void service.handleTimer(timerId);
+      // Keep the poll inside this timer invocation. Plugin API 2 revokes Host
+      // handles (hostDependencies, ui) once the callback settles, so a detached
+      // poll would fail with PLUGIN_INVOCATION_EXPIRED after its first await.
+      return service.handleTimer(timerId);
     },
   },
 };

@@ -899,7 +899,9 @@ export const wwDigiQuickSettings: PluginQuickSetting[] = [
 const wwDigiBasePlugin = definePlugin({
   apiVersion: 2,
   name: BUILTIN_WW_DIGI_PLUGIN_NAME,
-  version: '1.0.1',
+  version: '1.0.2',
+  // ContestLogbook `stateScope` first shipped in Plugin API 2.6.0.
+  minPluginApiVersion: '2.6.0',
   type: 'strategy',
   description: 'WW Digi FT8/FT4 contest workflow with operator-selected parallel QSOs',
   strategyFeatures: {

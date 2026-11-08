@@ -2,61 +2,68 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import {
+  assertStrictSemver,
+  compareSemver,
+  getPluginDirs,
+  isObject,
+  pathExists as fileExists,
+  pluginApiRanges,
+  pluginSourcePathspecs,
+  rangeFloor,
+  readJson,
+  readRegistry,
+  sourceChangedSince,
+} from './lib/market.mjs';
 
-const rootDir = process.cwd();
 const README_MAX_BYTES = 100 * 1024;
-const STRICT_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 
-function assertStrictSemver(value, label) {
-  if (typeof value !== 'string' || !STRICT_SEMVER_PATTERN.test(value)) {
-    throw new Error(`${label} must be a strict semantic version`);
+/**
+ * The Host accepts a plugin when its Plugin API satisfies `^minPluginApiVersion`,
+ * so the declaration must not be lower than any Plugin API the plugin builds
+ * against, and must stay within the same major.
+ */
+async function validatePluginApiDeclaration(workspaceDir, pkg) {
+  const declared = pkg.tx5drPlugin.minPluginApiVersion;
+  const ranges = await pluginApiRanges(workspaceDir, pkg);
+  if (ranges.length === 0) {
+    throw new Error(`Workspace ${pkg.name} must depend on @tx5dr/plugin-api so its Plugin API floor can be verified`);
+  }
+  for (const { source, range } of ranges) {
+    const floor = rangeFloor(range);
+    if (!floor) {
+      throw new Error(`Workspace ${pkg.name}: unsupported @tx5dr/plugin-api range "${range}" in ${source}`);
+    }
+    if (compareSemver(declared, floor) < 0) {
+      throw new Error(
+        `Workspace ${pkg.name} declares minPluginApiVersion ${declared}, but ${source} builds against `
+        + `@tx5dr/plugin-api ${range}; declare at least ${floor}`,
+      );
+    }
+    if (declared.split('.')[0] !== floor.split('.')[0]) {
+      throw new Error(
+        `Workspace ${pkg.name} declares minPluginApiVersion ${declared} outside the major of ${source} range ${range}`,
+      );
+    }
   }
 }
 
-function isObject(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, 'utf8'));
-}
-
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
+/** A published version is immutable: changing packaged sources requires a new version. */
+function validateVersionNotRepublished(workspaceDir, pkg, record) {
+  const published = record?.versions.find((entry) => entry.version === pkg.version);
+  if (!published) return;
+  if (published.minPluginApiVersion !== pkg.tx5drPlugin.minPluginApiVersion) {
+    throw new Error(
+      `Workspace ${pkg.name} ${pkg.version} is already published with minPluginApiVersion `
+      + `${published.minPluginApiVersion}; bump the plugin version to change it`,
+    );
   }
-}
-
-async function getPluginDirs() {
-  const entries = await fs.readdir(rootDir, { withFileTypes: true });
-  const pluginDirs = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    if (entry.name.startsWith('.')) {
-      continue;
-    }
-    if (entry.name === 'scripts') {
-      continue;
-    }
-    const packageJsonPath = path.join(rootDir, entry.name, 'package.json');
-    if (!await fileExists(packageJsonPath)) {
-      continue;
-    }
-    const pkg = await readJson(packageJsonPath);
-    if (!isObject(pkg.tx5drPlugin)) {
-      continue;
-    }
-    pluginDirs.push(path.join(rootDir, entry.name));
+  if (sourceChangedSince(published.sourceCommit, pluginSourcePathspecs(workspaceDir, pkg))) {
+    throw new Error(
+      `Workspace ${pkg.name} sources changed since ${pkg.version} was published from `
+      + `${published.sourceCommit.slice(0, 7)}; bump the plugin version`,
+    );
   }
-  if (pluginDirs.length === 0) {
-    throw new Error('No plugin directories with package.json were found');
-  }
-  return pluginDirs.sort();
 }
 
 async function validateWorkspace(workspaceDir) {
@@ -80,10 +87,13 @@ async function validateWorkspace(workspaceDir) {
       throw new Error(`Workspace ${pkg.name ?? workspaceDir} is missing tx5drPlugin.${key}`);
     }
   }
+  assertStrictSemver(pkg.version, `Workspace ${pkg.name ?? workspaceDir} version`);
   assertStrictSemver(
     meta.minPluginApiVersion,
     `Workspace ${pkg.name ?? workspaceDir} tx5drPlugin.minPluginApiVersion`,
   );
+  await validatePluginApiDeclaration(workspaceDir, pkg);
+  validateVersionNotRepublished(workspaceDir, pkg, registry.get(meta.pluginName));
 
   if (!Array.isArray(meta.include) || meta.include.length === 0) {
     throw new Error(`Workspace ${pkg.name ?? workspaceDir} must define tx5drPlugin.include`);
@@ -114,9 +124,19 @@ async function validateWorkspace(workspaceDir) {
   console.log(`Validated workspace: ${pkg.name} -> ${meta.pluginName}`);
 }
 
+const registry = await readRegistry();
 const pluginDirs = await getPluginDirs();
+const failures = [];
 for (const pluginDir of pluginDirs) {
-  await validateWorkspace(pluginDir);
+  try {
+    await validateWorkspace(pluginDir);
+  } catch (error) {
+    failures.push(error instanceof Error ? error.message : String(error));
+  }
+}
+if (failures.length > 0) {
+  for (const failure of failures) console.error(`ERROR ${failure}`);
+  throw new Error(`${failures.length} plugin(s) failed marketplace validation`);
 }
 
 console.log(`Validated ${pluginDirs.length} plugin(s).`);

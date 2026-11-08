@@ -1,0 +1,27 @@
+{
+  "name": "bd8ftc-frpc-connector",
+  "meta": {
+    "title": "websdr.bd8ftc.de FRP穿透服务",
+    "description": "接入 websdr.bd8ftc.de FRP穿透服务，按登记呼号下载专属 frpc 配置，并启动本机 frpc 客户端。",
+    "readmeMarkdown": "# websdr.bd8ftc.de FRP穿透服务\n\n插件 ID：`bd8ftc-frpc-connector`\n\n## 定位\n\n本插件用于接入 websdr.bd8ftc.de FRP穿透服务。插件会根据你的 websdr.bd8ftc.de 登记呼号下载专属 `frpc.toml`，然后启动本机 `frpc` 客户端。\n\n它不是通用 FRP 管理器，也不在本机启动 `frps` 服务端；`frps` 由 websdr.bd8ftc.de 服务端维护。\n\n## 支持平台\n\n插件内置官方 fatedier/frp v0.68.1 的 `frpc` 客户端：\n\n| 系统 | 架构 | 二进制 |\n| --- | --- | --- |\n| Windows | amd64 | `bin/windows-amd64/frpc.exe` |\n| macOS | amd64 | `bin/darwin-amd64/frpc` |\n| macOS | arm64 | `bin/darwin-arm64/frpc` |\n| Linux | amd64 | `bin/linux-amd64/frpc` |\n| Linux | arm64 | `bin/linux-arm64/frpc` |\n\n## 功能\n\n- 按登记呼号自动下载 websdr.bd8ftc.de 下发的 frpc 配置\n- 自动选择当前平台对应的 frpc 客户端\n- Windows 生成 `run-frpc.bat` 后运行\n- macOS/Linux 生成 `run-frpc.sh`、设置执行权限后后台运行\n- 支持异常退出后自动重启\n\n## 使用\n\n1. 先向 `bd8ftc@bd8ftc.de` 发送邮件申请开通，邮件中包含你的呼号。\n2. 审核通过后，在插件设置中填写 websdr.bd8ftc.de 登记呼号。\n3. 保持“保存配置后自动启动/重启”开启，保存后插件会自动下载配置并启动 frpc。\n4. 如需手动控制，使用“启动/重启”和“停止”按钮。\n5. 确认系统安全软件允许 `frpc` 或 `frpc.exe` 运行。\n6. FRPC 启动后，访问 `websdr.bd8ftc.de`，并输入你的呼号来访问服务。\n\n### 交互规则\n\n- 未填写登记呼号时，插件只保存设置，不会启动 frpc，也不会反复报错。\n- 如果呼号尚未开通，下载配置会返回 404；请按提示发邮件到 `bd8ftc@bd8ftc.de` 申请。\n- “保存配置后自动启动/重启”开启时，保存呼号或重启间隔会立即启动或重启 frpc。\n- 点击“启动/重启”会立即下载最新配置、重建脚本、停止旧进程并启动新进程。\n- 点击“停止”会停止插件管理的 frpc，并保持停止状态；下次保存配置且自动启动开启时会再次启动。\n\n成功运行后访问，并输入呼号：\n\n👉 http://websdr.bd8ftc.de\n\n## 日志和排错\n\n- 运行配置：`frpc.toml`\n- 进程记录：`frpc.pid`\n- Windows 启动脚本：`run-frpc.bat`\n- macOS/Linux 启动脚本：`run-frpc.sh`\n- macOS/Linux 输出日志：`frpc.log`\n\n如果 macOS/Linux 无法启动，请检查插件目录权限，或手动执行：\n\n```sh\nchmod +x run-frpc.sh bin/*/frpc\n./run-frpc.sh\n```\n\n⚠ `frpc` 可能被 Windows 安全中心、macOS Gatekeeper 或杀毒软件拦截。如果无法启动，请将插件目录和对应二进制加入信任列表。\n",
+    "license": "GPL-3.0-only",
+    "categories": [],
+    "keywords": [],
+    "screenshots": []
+  },
+  "versions": [
+    {
+      "version": "1.0.0",
+      "minPluginApiVersion": "1.0.0",
+      "permissions": [
+        "network"
+      ],
+      "sha256": "c95749d6514b6dbceb4f12e4731373a3c1e3e00385f3612c590ccd60d223ef81",
+      "size": 30615669,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/nightly/artifacts/bd8ftc-frpc-connector-1.0.0.zip",
+      "publishedAt": "2026-11-02T05:42:19.930Z",
+      "sourceCommit": "71c6e4c3bf0ce87dff298e3c78506865f860a99a"
+    }
+  ]
+}

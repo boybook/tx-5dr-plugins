@@ -1,6 +1,6 @@
 {
   "name": "tx5dr-waveloggate",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Real-time WaveLog integration plugin for TX-5DR",
@@ -10,11 +10,14 @@
   "scripts": {
     "build": "node -e \"console.log('no build needed')\""
   },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^2.0.0"
+  },
   "tx5drPlugin": {
     "pluginName": "tx5dr-waveloggate",
     "title": "WaveLogGate for TX-5DR",
     "description": "Real-time WaveLog radio frequency and mode synchronization for TX-5DR.",
-    "minPluginApiVersion": "1.7.11",
+    "minPluginApiVersion": "2.0.0",
     "author": "BI7ALG",
     "license": "MIT",
     "repository": "https://github.com/BI7ALG/tx5dr-waveloggate-plugin",

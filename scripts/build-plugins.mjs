@@ -80,7 +80,9 @@ async function installSharedDependencies() {
   const sharedDir = path.join(rootDir, 'shared', 'ft8-contest-family');
   if (!await fileExists(path.join(sharedDir, 'package.json'))) return;
   console.log(`\n==> Installing shared package dependencies: ${sharedDir}`);
-  run('npm', ['install', '--no-fund', '--no-audit'], sharedDir);
+  // Locked installs keep the bundled @tx5dr/plugin-api equal to the declared floor.
+  const hasLockfile = await fileExists(path.join(sharedDir, 'package-lock.json'));
+  run('npm', hasLockfile ? ['ci'] : ['install', '--no-fund', '--no-audit'], sharedDir);
 }
 
 const pluginDirs = await getPluginDirs();

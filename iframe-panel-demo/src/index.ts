@@ -29,9 +29,10 @@ function pushToLiveMonitor(
 }
 
 export const iframePanelDemoPlugin: MarketplacePluginDefinition = {
+  apiVersion: 2,
   name: IFRAME_PANEL_DEMO_PLUGIN_NAME,
-  version: '1.0.1',
-  minPluginApiVersion: '1.2.0',
+  version: '1.1.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   description: 'pluginDescription',
 
@@ -86,7 +87,8 @@ export const iframePanelDemoPlugin: MarketplacePluginDefinition = {
   onLoad(ctx) {
     ctx.ui.registerPageHandler({
       async onMessage(_pageId: string, action: string, data: unknown, requestContext) {
-        const d = data as Record<string, unknown>;
+        // Page data is an untrusted JSON snapshot from the iframe.
+        const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
         switch (action) {
           case 'getState':
             return {
@@ -102,7 +104,10 @@ export const iframePanelDemoPlugin: MarketplacePluginDefinition = {
             return { counter: next };
           }
           case 'setLabel': {
-            const label = d.label as string;
+            if (typeof d.label !== 'string') {
+              throw new Error('setLabel requires a string label');
+            }
+            const label = d.label;
             ctx.store.operator.set('label', label);
             requestContext.page.push('labelUpdated', { label });
             pushToLiveMonitor(ctx, 'labelUpdated', { label }, requestContext.page.sessionId);

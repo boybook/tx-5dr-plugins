@@ -1,6 +1,6 @@
 {
   "name": "tx5dr-plugin-contest-ybdxpi-ft8",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "main": "dist/index.mjs",
@@ -12,7 +12,7 @@
     "pluginName": "contest-ybdxpi-ft8",
     "title": "YBDXPI FT8 Contest",
     "description": "FT8 contest with grid exchange and Indonesia/DX/member scoring. 2026: 2026-10-24 00:00 UTC to 2026-10-25 23:59 UTC.",
-    "minPluginApiVersion": "2.5.0",
+    "minPluginApiVersion": "2.6.0",
     "author": "TX-5DR",
     "license": "GPL-3.0-only",
     "repository": "https://github.com/boybook/tx-5dr-plugins",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@tx5dr/ft8-contest-family-shared": "file:../shared/ft8-contest-family",
-    "@tx5dr/plugin-api": "^2.5.0"
+    "@tx5dr/plugin-api": "^2.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

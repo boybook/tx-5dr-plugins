@@ -77,9 +77,10 @@ function pushEvent(ctx: PluginContext, entry: string): void {
 }
 
 const qsoSessionInspectorPlugin: MarketplacePluginDefinition = {
+  apiVersion: 2,
   name: 'qso-session-inspector',
-  version: '1.0.0',
-  minPluginApiVersion: '1.2.0',
+  version: '1.1.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   description: 'pluginDescription',
 

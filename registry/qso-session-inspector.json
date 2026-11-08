@@ -1,0 +1,59 @@
+{
+  "name": "qso-session-inspector",
+  "meta": {
+    "title": "QSO Session Inspector",
+    "description": "Tracks slot, decode, and QSO lifecycle events for inspection and debugging.",
+    "readmeMarkdown": "# qso-session-inspector\n\nMigrated from TX-5DR builtin plugins.\n\nThis utility plugin demonstrates:\n\n- slot-level session statistics\n- decode and QSO lifecycle event tracking\n- operator-scoped inspection panels\n- read-only debugging instrumentation\n\n## Build\n\n```bash\nnpm install\nnpm run build\n```\n",
+    "readmeSourceUrl": "https://github.com/boybook/tx-5dr-plugins/blob/main/qso-session-inspector/README.md",
+    "locales": {
+      "en": {
+        "pluginName": "QSO Session Inspector",
+        "pluginDescription": "Track slot, decode, and QSO lifecycle events to help inspect plugin behavior.",
+        "sessionOverview": "Inspector Notes",
+        "sessionOverviewDesc": "This plugin is read-only. It records and visualizes activity without changing decisions.",
+        "recentEventLimit": "Recent event limit",
+        "recentEventLimitDesc": "How many recent entries should be kept in the event panel.",
+        "sessionStatsPanel": "Session Stats",
+        "sessionEventsPanel": "Recent Events"
+      },
+      "zh": {
+        "pluginName": "QSO 会话观察器",
+        "pluginDescription": "记录时隙、解码和 QSO 生命周期事件，便于调试策略行为。",
+        "sessionOverview": "会话观察说明",
+        "sessionOverviewDesc": "该插件只做记录与展示，不会改变任何自动化决策。",
+        "recentEventLimit": "最近事件条数",
+        "recentEventLimitDesc": "日志面板中保留的最近事件数量。",
+        "sessionStatsPanel": "会话统计",
+        "sessionEventsPanel": "最近事件"
+      }
+    },
+    "author": "TX-5DR",
+    "license": "GPL-3.0-only",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "homepage": "https://tx5dr.com/plugins/qso-session-inspector",
+    "categories": [
+      "demo",
+      "inspection"
+    ],
+    "keywords": [
+      "qso",
+      "session",
+      "debug",
+      "hook"
+    ],
+    "screenshots": []
+  },
+  "versions": [
+    {
+      "version": "1.0.0",
+      "minPluginApiVersion": "1.2.0",
+      "permissions": [],
+      "sha256": "8944942639c0bb87cba7a0e91d3497ac42deb8d3d428dbfb7d39b2b69d44e034",
+      "size": 2719,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/nightly/artifacts/qso-session-inspector-1.0.0.zip",
+      "publishedAt": "2026-11-02T05:42:19.964Z",
+      "sourceCommit": "71c6e4c3bf0ce87dff298e3c78506865f860a99a"
+    }
+  ]
+}

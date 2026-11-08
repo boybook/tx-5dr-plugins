@@ -10,14 +10,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "strict": true,
-    "paths": {
-      "@tx5dr/contracts": [
-        "../../tx-5dr/packages/contracts/dist/index.d.ts"
-      ],
-      "@tx5dr/plugin-api": [
-        "../../tx-5dr/packages/plugin-api/dist/index.d.ts"
-      ]
-    },
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true

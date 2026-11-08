@@ -8,10 +8,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PLUGIN_ID = 'bd8ftc-frpc-connector';
 const SERVICE_NAME = 'websdr.bd8ftc.de FRP穿透服务';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const FRPC_VERSION = '0.68.1';
 const SUPPORT_EMAIL = 'bd8ftc@bd8ftc.de';
 const API = 'http://websdr.bd8ftc.de/?callsign=';
+// Network deadline below the Host's 5 s hook budget (Plugin API 2).
+const FETCH_TIMEOUT_MS = 3000;
 
 function resolvePluginRoot() {
   if (existsSync(path.join(__dirname, 'bin'))) {
@@ -153,7 +155,7 @@ async function downloadConfig(ctx) {
 
   log(ctx, `下载配置: ${url}`);
 
-  const res = await ctx.fetch(url);
+  const res = await ctx.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) {
     if (res.status === 404) {
       throw createRegistrationError(call);
@@ -432,9 +434,10 @@ async function reconcileDesiredState(ctx, reason) {
 }
 
 export default {
+  apiVersion: 2,
   name: PLUGIN_ID,
   version: VERSION,
-  minPluginApiVersion: '1.0.0',
+  minPluginApiVersion: '2.0.0',
   type: 'utility',
   instanceScope: 'global',
   description: '接入 websdr.bd8ftc.de FRP穿透服务，按登记呼号下载专属 frpc 配置，并启动本机 frpc 客户端。',

@@ -1,3 +1,6 @@
+// Network deadline below the Host's 5 s hook budget (Plugin API 2).
+const FETCH_TIMEOUT_MS = 4000;
+
 let lastFreq = null;
 let lastMode = null;
 let debugLogged = false;
@@ -115,6 +118,7 @@ async function pollRadio(ctx) {
         }
 
         const res = await ctx.fetch(apiUrl, {
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -156,9 +160,10 @@ async function pollRadio(ctx) {
 }
 
 export default {
+    apiVersion: 2,
     name: 'tx5dr-waveloggate',
-    version: '2.1.0',
-    minPluginApiVersion: '1.7.11',
+    version: '2.2.0',
+    minPluginApiVersion: '2.0.0',
     type: 'utility',
     description: 'pluginDescription',
     instanceScope: 'operator',
@@ -201,7 +206,10 @@ export default {
 
     hooks: {
         onTimer(timerId, ctx) {
-            if (timerId === 'pollRadio') pollRadio(ctx);
+            // Return the poll so the request and response body are read inside
+            // this timer invocation; Plugin API 2 revokes ctx.fetch Responses
+            // once the hook settles.
+            if (timerId === 'pollRadio') return pollRadio(ctx);
         },
         onConfigChange(changes, ctx) {
             if (changes.pollInterval) {

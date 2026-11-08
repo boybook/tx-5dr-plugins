@@ -35,8 +35,9 @@ Each plugin must expose a uniform contract to CI:
 - `tx5drPlugin.pluginName`: runtime plugin directory name
 - `tx5drPlugin.entry`: built entry module path used for validation
 - `tx5drPlugin.include`: files or directories copied into the released ZIP
-- `tx5drPlugin.minPluginApiVersion`: oldest bundled `@tx5dr/plugin-api` version
-  that supports the plugin; it is unrelated to the TX-5DR nightly product version
+- `tx5drPlugin.minPluginApiVersion`: bundled `@tx5dr/plugin-api` version the
+  plugin requires, matched with `^` semantics; it is unrelated to the TX-5DR
+  product version
 
 `package-lock.json` is optional. If present, CI uses `npm ci`; otherwise it
 falls back to `npm install`.
@@ -45,14 +46,18 @@ Example:
 
 ```json
 {
+  "version": "1.0.0",
   "scripts": {
     "build": "tsc"
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^2.6.0"
   },
   "tx5drPlugin": {
     "pluginName": "example-plugin",
     "title": "Example Plugin",
     "description": "Example description",
-    "minPluginApiVersion": "1.0.0",
+    "minPluginApiVersion": "2.6.0",
     "entry": "dist/index.js",
     "include": [
       { "from": "dist/index.js", "to": "index.js" },
@@ -66,17 +71,60 @@ This keeps plugin-specific build logic inside the plugin while letting CI use a
 single packaging and publishing path. Adding a new plugin does not require
 editing any root package manifest.
 
-## Release Channels
+## Versioning and Distribution
 
-- `nightly`: built automatically from `main`
-- `stable`: promoted after review
+There are no release channels. Every plugin version is published once and kept:
 
-## Distribution
+- A push to `main` publishes each plugin whose `package.json` version is not in
+  `registry/<plugin>.json` yet. The archive is uploaded once to
+  `https://dl.tx5dr.com/plugins/market/artifacts/<plugin>/<version>.zip` and
+  never overwritten; CI then commits the new registry entry.
+- `https://dl.tx5dr.com/plugins/market/index.json` (schema v3) lists every
+  version. A Host installs the newest non-yanked version whose
+  `minPluginApiVersion` its bundled Plugin API satisfies with `^` semantics
+  (`>=` the declared version, same major). If none exists, the Host explains
+  whether TX-5DR must be updated or the plugin has not been updated yet.
+- `nightly/index.json` and `stable/index.json` (schema v2, identical content)
+  are generated only for already released Hosts that still read channels. They
+  offer each plugin's newest version those Hosts can run. Do not delete
+  `nightly/artifacts/`: earlier releases and registry entries reference it.
+- GitHub Releases are not used for plugin distribution.
+- Deployment runs only from `main`, in two jobs: plugins are built without
+  write credentials, then a separate job uploads archives and commits the
+  registry. Do not roll back by reverting the deploy workflow; the old channel
+  workflow overwrote `nightly/artifacts/*.zip`, which registry entries pin by
+  hash. Fix forward with a new plugin version or a yanked entry instead.
+- Commit each plugin's `package-lock.json` (including `shared/`). Contest
+  plugins bundle `@tx5dr/plugin-api`, so an unlocked install could ship code
+  newer than the declared `minPluginApiVersion`.
 
-- Marketplace catalog JSON and ZIP assets are uploaded to OSS
-- Distribution base URL: `https://dl.tx5dr.com/plugins/market`
-- GitHub Releases are not used for plugin distribution
-- TX-5DR clients read the official marketplace catalog from a fixed URL
+Rules enforced by `scripts/validate-marketplace.mjs`:
+
+- `minPluginApiVersion` (package metadata and runtime definition) must not be
+  lower than the `@tx5dr/plugin-api` range the plugin or any bundled `shared/`
+  package builds against, and must stay in the same major. Plugin authors can
+  run the same declaration check locally with
+  `npm exec --package=@tx5dr/plugin-api@^2.7.0 -- tx5dr-plugin check`
+  (not `npx tx5dr-plugin`: no npm package has that name). Every plugin must
+  depend on `@tx5dr/plugin-api` so this can be checked.
+- Changing a published plugin's packaged sources requires a new `version`.
+  README and test changes do not.
+
+To withdraw a broken version, set `"yanked": true` and a `"yankedReason"` on its
+entry in `registry/<plugin>.json` through a pull request. Hosts stop offering it;
+the archive stays available for audit. Publish a fixed higher version instead of
+replacing bytes.
+
+Publication tooling:
+
+```bash
+node scripts/validate-marketplace.mjs
+node scripts/build-plugins.mjs
+node scripts/package-market.mjs                 # deterministic archives + candidates
+node scripts/publish-market.mjs --dry-run       # index files in .artifacts/market/site
+node scripts/check-catalog-compat.mjs           # parse them with released Host schemas
+node --test scripts/tests/
+```
 
 ## Current Status
 
@@ -88,11 +136,8 @@ Repository scaffold with migrated demo plugins and the external FT contest famil
 - 13 standard FT8/FT4 contest plugins
 - `ww-digi`
 
-Root tooling is just plain Node scripts under `scripts/`:
-
-- `node scripts/validate-marketplace.mjs`
-- `node scripts/build-plugins.mjs`
-- `node scripts/package-market.mjs --channel nightly`
+Root tooling is plain Node scripts under `scripts/`; see Versioning and
+Distribution above.
 
 ## Local Host Development
 

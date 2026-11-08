@@ -10,11 +10,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Test marketplace tooling
+        run: node --test scripts/tests/
 
       - name: Validate marketplace contract
         run: node scripts/validate-marketplace.mjs
@@ -22,5 +27,10 @@ jobs:
       - name: Build plugins
         run: node scripts/build-plugins.mjs
 
-      - name: Package nightly catalog
-        run: node scripts/package-market.mjs --channel nightly --base-url https://dl.tx5dr.com/plugins/market
+      - name: Package candidates
+        run: node scripts/package-market.mjs
+
+      - name: Check generated catalogs against released Hosts
+        run: |
+          node scripts/publish-market.mjs --dry-run --base-url https://dl.tx5dr.com/plugins/market
+          node scripts/check-catalog-compat.mjs

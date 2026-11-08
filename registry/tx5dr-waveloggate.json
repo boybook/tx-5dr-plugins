@@ -1,0 +1,65 @@
+{
+  "name": "tx5dr-waveloggate",
+  "meta": {
+    "title": "WaveLogGate for TX-5DR",
+    "description": "Real-time WaveLog radio frequency and mode synchronization for TX-5DR.",
+    "readmeMarkdown": "# WaveLogGate for TX-5DR\n\nReal-time WaveLog integration plugin for TX-5DR.\n\n## Features\n\n- Frequency synchronization\n- Operating mode synchronization\n- WaveLog API integration\n- Digital mode support\n\n## Repository\n\nhttps://github.com/BI7ALG/tx5dr-waveloggate-plugin\n",
+    "readmeSourceUrl": "https://github.com/BI7ALG/tx5dr-waveloggate-plugin/blob/main/waveloggate/README.md",
+    "locales": {
+      "en": {
+        "pluginName": "WaveLogGate for TX-5DR",
+        "pluginDescription": "Synchronize TX-5DR radio frequency and operating mode to WaveLog in real time.",
+        "apiUrlLabel": "WaveLog API URL",
+        "apiUrlDescription": "WaveLog radio API endpoint. If the path is omitted, /index.php/api/radio is appended automatically.",
+        "apiKeyLabel": "API key",
+        "apiKeyDescription": "WaveLog API key used to authorize radio status updates.",
+        "radioNameLabel": "Radio name",
+        "radioNameDescription": "Radio identifier sent to WaveLog with each frequency and mode update.",
+        "pollIntervalLabel": "Polling interval (ms)",
+        "pollIntervalDescription": "How often TX-5DR checks the current radio state and sends changed values to WaveLog."
+      },
+      "zh": {
+        "pluginName": "WaveLogGate for TX-5DR",
+        "pluginDescription": "将 TX-5DR 当前电台频率和工作模式实时同步到 WaveLog。",
+        "apiUrlLabel": "WaveLog API URL",
+        "apiUrlDescription": "WaveLog 电台 API 地址。若未包含接口路径，插件会自动追加 /index.php/api/radio。",
+        "apiKeyLabel": "API Key",
+        "apiKeyDescription": "用于向 WaveLog 上报电台状态的 API Key。",
+        "radioNameLabel": "电台名称",
+        "radioNameDescription": "每次向 WaveLog 上报频率和模式时使用的电台标识。",
+        "pollIntervalLabel": "轮询间隔（毫秒）",
+        "pollIntervalDescription": "TX-5DR 检查当前电台状态并向 WaveLog 发送变化值的频率。"
+      }
+    },
+    "author": "BI7ALG",
+    "license": "MIT",
+    "repository": "https://github.com/BI7ALG/tx5dr-waveloggate-plugin",
+    "categories": [
+      "logging",
+      "integration"
+    ],
+    "keywords": [
+      "wavelog",
+      "radio",
+      "frequency",
+      "mode"
+    ],
+    "screenshots": []
+  },
+  "versions": [
+    {
+      "version": "2.1.0",
+      "minPluginApiVersion": "1.7.11",
+      "permissions": [
+        "network",
+        "radio:read"
+      ],
+      "sha256": "bbddb4c3c038deeeb90ab447a21827f1090d9473e896cfe7c09433ee8b667831",
+      "size": 4340,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/nightly/artifacts/tx5dr-waveloggate-2.1.0.zip",
+      "publishedAt": "2026-11-02T05:42:19.972Z",
+      "sourceCommit": "71c6e4c3bf0ce87dff298e3c78506865f860a99a"
+    }
+  ]
+}
