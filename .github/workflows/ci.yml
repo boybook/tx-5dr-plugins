@@ -19,7 +19,7 @@ jobs:
           node-version: 22
 
       - name: Test marketplace tooling
-        run: node --test scripts/tests/
+        run: node --test scripts/tests/*.test.mjs
 
       - name: Validate marketplace contract
         run: node scripts/validate-marketplace.mjs

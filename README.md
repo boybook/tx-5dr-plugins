@@ -123,7 +123,7 @@ node scripts/build-plugins.mjs
 node scripts/package-market.mjs                 # deterministic archives + candidates
 node scripts/publish-market.mjs --dry-run       # index files in .artifacts/market/site
 node scripts/check-catalog-compat.mjs           # parse them with released Host schemas
-node --test scripts/tests/
+node --test scripts/tests/*.test.mjs
 ```
 
 ## Current Status
