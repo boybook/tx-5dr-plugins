@@ -127,6 +127,20 @@
   },
   "versions": [
     {
+      "version": "1.0.1",
+      "minPluginApiVersion": "2.6.0",
+      "permissions": [
+        "logbook:session",
+        "plugin:event-bus"
+      ],
+      "sha256": "8e2060ede8b0406f6d3c4119fd19b66e2bb56eacc461623cf3a9e82bf4ebc575",
+      "size": 368418,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/contest-nccc-ft4-sprint/1.0.1.zip",
+      "publishedAt": "2026-11-08T04:42:28.676Z",
+      "sourceCommit": "7c990df0f082eafa3d39dd065d72fe7fbe68d957"
+    },
+    {
       "version": "1.0.0",
       "minPluginApiVersion": "2.5.0",
       "permissions": [

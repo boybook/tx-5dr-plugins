@@ -129,6 +129,17 @@
   },
   "versions": [
     {
+      "version": "1.3.0",
+      "minPluginApiVersion": "2.0.0",
+      "permissions": [],
+      "sha256": "4807f5354d44e764f5a4ffe073a75ed0d16f8cd734b5104ef02b4f426e33fea0",
+      "size": 178972,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/web-iframe-embed/1.3.0.zip",
+      "publishedAt": "2026-11-08T04:42:28.676Z",
+      "sourceCommit": "7c990df0f082eafa3d39dd065d72fe7fbe68d957"
+    },
+    {
       "version": "1.2.3",
       "minPluginApiVersion": "1.7.9",
       "permissions": [],

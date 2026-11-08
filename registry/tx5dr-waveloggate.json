@@ -48,6 +48,20 @@
   },
   "versions": [
     {
+      "version": "2.2.0",
+      "minPluginApiVersion": "2.0.0",
+      "permissions": [
+        "network",
+        "radio:read"
+      ],
+      "sha256": "85fb54646689d57ccd97a812e885996eaaba0df09b08a089e0cacbe1b40a9f17",
+      "size": 4132,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/tx5dr-waveloggate/2.2.0.zip",
+      "publishedAt": "2026-11-08T04:42:28.676Z",
+      "sourceCommit": "7c990df0f082eafa3d39dd065d72fe7fbe68d957"
+    },
+    {
       "version": "2.1.0",
       "minPluginApiVersion": "1.7.11",
       "permissions": [

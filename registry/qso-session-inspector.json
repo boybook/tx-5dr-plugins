@@ -45,6 +45,17 @@
   },
   "versions": [
     {
+      "version": "1.1.0",
+      "minPluginApiVersion": "2.0.0",
+      "permissions": [],
+      "sha256": "4bfbeaf8daf7a4646619aface9a4c01e2ffd0cbe22f5af43607770a4abd16ce1",
+      "size": 2382,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/qso-session-inspector/1.1.0.zip",
+      "publishedAt": "2026-11-08T04:42:28.676Z",
+      "sourceCommit": "7c990df0f082eafa3d39dd065d72fe7fbe68d957"
+    },
+    {
       "version": "1.0.0",
       "minPluginApiVersion": "1.2.0",
       "permissions": [],

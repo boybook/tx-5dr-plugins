@@ -127,6 +127,20 @@
   },
   "versions": [
     {
+      "version": "1.0.1",
+      "minPluginApiVersion": "2.6.0",
+      "permissions": [
+        "logbook:session",
+        "plugin:event-bus"
+      ],
+      "sha256": "af1ace18a03119b7a5f080ad81efc6095df00ebe1fe87f099801f3dcea6eff8b",
+      "size": 368446,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/contest-ft-challenge/1.0.1.zip",
+      "publishedAt": "2026-11-08T04:42:28.676Z",
+      "sourceCommit": "7c990df0f082eafa3d39dd065d72fe7fbe68d957"
+    },
+    {
       "version": "1.0.0",
       "minPluginApiVersion": "2.5.0",
       "permissions": [
