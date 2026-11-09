@@ -1,0 +1,52 @@
+{
+  "name": "tx5dr-waveloggate-bridge",
+  "version": "3.0.2",
+  "private": true,
+  "type": "module",
+  "description": "WaveLog radio interface for TX-5DR: frequency/mode sync and Bandmap click-to-tune",
+  "main": "src/index.js",
+  "author": "BA8BLK",
+  "license": "MIT",
+  "scripts": {
+    "build": "node --check src/index.js"
+  },
+  "tx5drPlugin": {
+    "pluginName": "tx5dr-waveloggate-bridge",
+    "title": "WaveLog Bridge",
+    "description": "Sync TX-5DR frequency and mode to WaveLog, and tune the radio from WaveLog Bandmap clicks.",
+    "minPluginApiVersion": "2.5.0",
+    "author": "BA8BLK",
+    "license": "MIT",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "categories": [
+      "logging",
+      "integration"
+    ],
+    "keywords": [
+      "wavelog",
+      "cat",
+      "bandmap",
+      "radio",
+      "frequency",
+      "mode"
+    ],
+    "entry": "src/index.js",
+    "include": [
+      {
+        "from": "src/index.js",
+        "to": "index.js"
+      },
+      {
+        "from": "src/locales",
+        "to": "locales"
+      },
+      {
+        "from": "README.md",
+        "to": "README.md"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@tx5dr/plugin-api": "^2.5.0"
+  }
+}
