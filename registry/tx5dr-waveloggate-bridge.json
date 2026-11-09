@@ -1,0 +1,88 @@
+{
+  "name": "tx5dr-waveloggate-bridge",
+  "meta": {
+    "title": "WaveLog Bridge",
+    "description": "Sync TX-5DR frequency and mode to WaveLog, and tune the radio from WaveLog Bandmap clicks.",
+    "readmeMarkdown": "# WaveLog Bridge for TX-5DR\n\n基于 BI7ALG/tx5dr-waveloggate-plugin 2.1.0 修改。\n\n- 频率、模式实时同步到 WaveLog，并定时发送心跳\n- WaveLog Bandmap 点击切频（本地 HTTP 回调，默认 127.0.0.1:54321）\n- FT8/FT4 模式下自动对齐标准拨号频率\n- 全局单实例，多操作员不会重复上报\n",
+    "readmeSourceUrl": "https://github.com/boybook/tx-5dr-plugins/blob/main/waveloggate-bridge/README.md",
+    "locales": {
+      "en": {
+        "pluginName": "WaveLog Bridge",
+        "pluginDescription": "Syncs TX-5DR radio frequency and mode to WaveLog in real time, and tunes the radio when a WaveLog Bandmap spot is clicked.",
+        "apiUrlLabel": "WaveLog API URL",
+        "apiUrlDescription": "Your own WaveLog address, e.g. https://log.example.com. /index.php/api/radio is appended if missing. Leave empty to disable reporting.",
+        "apiKeyLabel": "API Key",
+        "apiKeyDescription": "Read/write key created in WaveLog under Admin → API.",
+        "radioNameLabel": "Radio name",
+        "radioNameDescription": "Name shown in the WaveLog hardware interfaces list.",
+        "pollIntervalLabel": "Poll interval (ms)",
+        "pollIntervalDescription": "How often to check the radio for frequency and mode changes.",
+        "heartbeatLabel": "Heartbeat (seconds)",
+        "heartbeatDescription": "Re-send the unchanged state at this interval so WaveLog keeps the radio active. 0 disables it.",
+        "callbackEnabledLabel": "Enable Bandmap click-to-tune",
+        "callbackEnabledDescription": "Listen locally for WaveLog tune callbacks.",
+        "callbackHostLabel": "Callback listen address",
+        "callbackHostDescription": "127.0.0.1 by default (same computer only). Use 0.0.0.0 if the browser runs on another computer.",
+        "callbackPortLabel": "Callback listen port",
+        "callbackPortDescription": "Must match the port in the radio's CAT URL in WaveLog. Default 54321.",
+        "snapDigitalDialLabel": "Snap FT8/FT4 to dial frequency",
+        "snapDigitalDialDescription": "In FT8/FT4 mode, a spot within 0–3.5 kHz above a standard dial frequency tunes to that dial frequency (e.g. 14.074 MHz)."
+      },
+      "zh": {
+        "pluginName": "WaveLog Bridge",
+        "pluginDescription": "将 TX-5DR 当前电台频率和模式实时同步到 WaveLog，并支持在 WaveLog Bandmap 中点击切频。",
+        "apiUrlLabel": "WaveLog API URL",
+        "apiUrlDescription": "填写你自己的 WaveLog 地址，例如 https://log.example.com。未包含接口路径时自动追加 /index.php/api/radio。留空则不上报。",
+        "apiKeyLabel": "API Key",
+        "apiKeyDescription": "WaveLog 中 Admin → API 生成的读写 Key。",
+        "radioNameLabel": "电台名称",
+        "radioNameDescription": "在 WaveLog 硬件接口列表中显示的电台名称。",
+        "pollIntervalLabel": "轮询间隔（毫秒）",
+        "pollIntervalDescription": "检查电台频率和模式变化的间隔。",
+        "heartbeatLabel": "心跳间隔（秒）",
+        "heartbeatDescription": "频率和模式不变时也按此间隔重新上报，防止 WaveLog 判定电台离线。填 0 关闭。",
+        "callbackEnabledLabel": "启用 Bandmap 点击切频",
+        "callbackEnabledDescription": "在本机监听 WaveLog 的切频回调请求。",
+        "callbackHostLabel": "回调监听地址",
+        "callbackHostDescription": "默认 127.0.0.1，仅本机浏览器可用。浏览器在其他电脑上时改为 0.0.0.0。",
+        "callbackPortLabel": "回调监听端口",
+        "callbackPortDescription": "需与 WaveLog 中该电台的 CAT URL 端口一致，默认 54321。",
+        "snapDigitalDialLabel": "FT8/FT4 自动对齐拨号频率",
+        "snapDigitalDialDescription": "当前处于 FT8/FT4 模式时，点击的 Spot 若落在标准频点上方 0–3.5 kHz 内，则切到标准拨号频率（如 14.074 MHz）。"
+      }
+    },
+    "author": "BA8BLK",
+    "license": "MIT",
+    "repository": "https://github.com/boybook/tx-5dr-plugins",
+    "categories": [
+      "logging",
+      "integration"
+    ],
+    "keywords": [
+      "wavelog",
+      "cat",
+      "bandmap",
+      "radio",
+      "frequency",
+      "mode"
+    ],
+    "screenshots": []
+  },
+  "versions": [
+    {
+      "version": "3.0.2",
+      "minPluginApiVersion": "2.5.0",
+      "permissions": [
+        "network",
+        "radio:read",
+        "radio:control"
+      ],
+      "sha256": "523df6087a39fd341dcc5aaee85260d3f210bc637ea05d43c63a4f0f0c9b5be3",
+      "size": 7881,
+      "artifactManifestVersion": 1,
+      "artifactUrl": "https://dl.tx5dr.com/plugins/market/artifacts/tx5dr-waveloggate-bridge/3.0.2.zip",
+      "publishedAt": "2026-11-09T06:11:49.716Z",
+      "sourceCommit": "25841f7ecd71ef94e0a0b3e82c7d0291d555628f"
+    }
+  ]
+}
