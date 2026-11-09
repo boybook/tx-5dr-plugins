@@ -68,16 +68,17 @@ let failCount = 0;
 let nextAttemptAt = 0;
 let lastErrorText = '';
 
-function recordFailure(ctx, message, details) {
+function logError(message, details) { logRef?.error(message, details); }
+function logDebug(message, details) { logRef?.debug?.(message, details); }
+
+function recordFailure(message, details) {
     failCount += 1;
     const delay = Math.min(300000, 5000 * 2 ** (failCount - 1));
     nextAttemptAt = Date.now() + delay;
     const text = `${message}|${JSON.stringify(details)}`;
-    if (text !== lastErrorText || failCount <= 1) {
-        ctx.log.error(message, { ...details, retryInSeconds: Math.round(delay / 1000) });
-    } else {
-        ctx.log.debug(message, { ...details, retryInSeconds: Math.round(delay / 1000) });
-    }
+    const payload = { ...details, retryInSeconds: Math.round(delay / 1000) };
+    if (text !== lastErrorText || failCount <= 1) logError(message, payload);
+    else logDebug(message, payload);
     lastErrorText = text;
 }
 
@@ -88,7 +89,11 @@ function recordSuccess() {
 }
 
 // ---------- 上报：TX-5DR → WaveLog ----------
-async function pushRadio(ctx) {
+// 注意：TX-5DR 对 onTimer 等回调限时 5 秒，超时且 1 秒内未结束会停用插件。
+// 因此这里只在回调内读取 ctx 并发起请求，网络等待在回调之外进行，且请求自带超时。
+const HTTP_TIMEOUT_MS = 4000;
+
+function pushRadio(ctx) {
     if (pushing) return;
     if (!ctx.radio?.isConnected) return;
 
@@ -107,8 +112,9 @@ async function pushRadio(ctx) {
     if (Date.now() < nextAttemptAt) return;
 
     pushing = true;
+    let request;
     try {
-        const res = await ctx.fetch(apiUrl, {
+        request = ctx.fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify({
@@ -118,34 +124,49 @@ async function pushRadio(ctx) {
                 mode,
                 timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
             }),
+            signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
         });
-        const body = await res.text().catch(() => '');
-
-        if (/<!doctype html|<html/i.test(body)) {
-            recordFailure(ctx, 'WaveLog 返回网页而非 JSON，请检查 API URL 和 API Key', { status: res.status, apiUrl });
-            return;
-        }
-        let json = null;
-        try { json = JSON.parse(body); } catch { /* 下面统一处理 */ }
-        if (res.ok && json && (json.status === 'ok' || json.status === 'success')) {
-            recordSuccess();
-            lastFreq = freq;
-            lastMode = mode;
-            lastPushAt = Date.now();
-            if (changed) ctx.log.info('已同步到 WaveLog', { freq, mode });
-        } else {
-            const hint = res.status === 404
-                ? '接口地址不存在：API URL 请只填 WaveLog 根地址，例如 https://log.example.com'
-                : res.status === 401 || res.status === 403
-                    ? 'API Key 无效或权限不足，请使用读写 Key'
-                    : undefined;
-            recordFailure(ctx, 'WaveLog 返回错误', { status: res.status, apiUrl, hint, body: body.substring(0, 200) });
-        }
     } catch (e) {
-        recordFailure(ctx, '上报 WaveLog 失败', { apiUrl, message: e?.message });
-    } finally {
         pushing = false;
+        recordFailure('上报 WaveLog 失败', { apiUrl, message: e?.message });
+        return;
     }
+
+    // 不在回调内等待结果
+    void (async () => {
+        try {
+            const res = await request;
+            const body = await res.text().catch(() => '');
+            if (/<!doctype html|<html/i.test(body)) {
+                recordFailure('WaveLog 返回网页而非 JSON，请检查 API URL 和 API Key', { status: res.status, apiUrl });
+                return;
+            }
+            let json = null;
+            try { json = JSON.parse(body); } catch { /* 下面统一处理 */ }
+            if (res.ok && json && (json.status === 'ok' || json.status === 'success')) {
+                recordSuccess();
+                lastFreq = freq;
+                lastMode = mode;
+                lastPushAt = Date.now();
+                if (changed) logRef?.info('已同步到 WaveLog', { freq, mode });
+            } else {
+                const hint = res.status === 404
+                    ? '接口地址不存在：API URL 请只填 WaveLog 根地址，例如 https://log.example.com'
+                    : res.status === 401 || res.status === 403
+                        ? 'API Key 无效或权限不足，请使用读写 Key'
+                        : undefined;
+                recordFailure('WaveLog 返回错误', { status: res.status, apiUrl, hint, body: body.substring(0, 200) });
+            }
+        } catch (e) {
+            const timedOut = e?.name === 'TimeoutError' || e?.name === 'AbortError';
+            recordFailure(timedOut ? 'WaveLog 响应超时' : '上报 WaveLog 失败', {
+                apiUrl,
+                message: timedOut ? `超过 ${HTTP_TIMEOUT_MS / 1000} 秒未响应` : e?.message,
+            });
+        } finally {
+            pushing = false;
+        }
+    })();
 }
 
 // ---------- 切频：WaveLog Bandmap → TX-5DR ----------
@@ -157,7 +178,7 @@ function snapToDigitalDial(freq, currentMode) {
     return dial ?? freq;
 }
 
-async function drainTuneQueue(ctx) {
+function drainTuneQueue(ctx) {
     if (tuning || !pendingTune) return;
     const req = pendingTune;
     pendingTune = null;
@@ -176,22 +197,27 @@ async function drainTuneQueue(ctx) {
         : req.frequency;
 
     tuning = true;
+    let command;
     try {
-        await ctx.radioCommands.submit({ type: 'set-frequency', frequency: target });
-        ctx.log.info('已按 WaveLog 切频', {
-            requested: req.frequency,
-            tuned: target,
-            spotMode: req.mode,
-            currentMode,
-        });
-        lastFreq = null; // 切频后立即回报新频率
-        await pushRadio(ctx);
+        command = ctx.radioCommands.submit({ type: 'set-frequency', frequency: target });
     } catch (e) {
-        // 发射中、调谐中或人工 PTT 时 TX-5DR 会拒绝，属于预期情况
-        ctx.log.warn('切频未执行', { frequency: target, reason: e?.message });
-    } finally {
         tuning = false;
+        ctx.log.warn('切频未执行', { frequency: target, reason: e?.message });
+        return;
     }
+
+    // 不在回调内等待电台执行结果；最长 15 秒后释放占用标记
+    const guard = setTimeout(() => { tuning = false; }, 15000);
+    Promise.resolve(command).then(() => {
+        logRef?.info('已按 WaveLog 切频', { requested: req.frequency, tuned: target, spotMode: req.mode, currentMode });
+        lastFreq = null; // 下一次轮询立即回报新频率
+    }, (e) => {
+        // 发射中、调谐中或人工 PTT 时 TX-5DR 会拒绝，属于预期情况
+        logRef?.warn('切频未执行', { frequency: target, reason: e?.message });
+    }).finally(() => {
+        clearTimeout(guard);
+        tuning = false;
+    });
 }
 
 function corsHeaders(req) {
@@ -271,7 +297,8 @@ async function startServer(ctx) {
 export default {
     apiVersion: 2,
     name: PLUGIN_NAME,
-    version: '3.0.1',
+    version: '3.0.2',
+    minPluginApiVersion: '2.5.0',
     type: 'utility',
     instanceScope: 'global',
     description: 'pluginDescription',
@@ -306,9 +333,10 @@ export default {
     },
 
     hooks: {
-        async onTimer(timerId, ctx) {
-            if (timerId === 'pollRadio') await pushRadio(ctx);
-            else if (timerId === 'tuneQueue') await drainTuneQueue(ctx);
+        onTimer(timerId, ctx) {
+            // 同步返回，不等待网络和电台
+            if (timerId === 'pollRadio') pushRadio(ctx);
+            else if (timerId === 'tuneQueue') drainTuneQueue(ctx);
         },
         async onConfigChange(changes, ctx) {
             if ('pollInterval' in changes) {
