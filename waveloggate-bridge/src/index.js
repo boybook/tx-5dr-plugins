@@ -89,11 +89,12 @@ function recordSuccess() {
 }
 
 // ---------- 上报：TX-5DR → WaveLog ----------
-// 注意：TX-5DR 对 onTimer 等回调限时 5 秒，超时且 1 秒内未结束会停用插件。
-// 因此这里只在回调内读取 ctx 并发起请求，网络等待在回调之外进行，且请求自带超时。
+// 注意：TX-5DR 对 onTimer 等回调限时 5 秒，超时且 1 秒内未结束会停用插件；
+// ctx.fetch 的响应又必须在回调结束前读完，否则会报 PLUGIN_INVOCATION_EXPIRED。
+// 因此在回调内等待请求完成，并用 4 秒超时（同时覆盖读取响应体）控制在限时之内。
 const HTTP_TIMEOUT_MS = 4000;
 
-function pushRadio(ctx) {
+async function pushRadio(ctx) {
     if (pushing) return;
     if (!ctx.radio?.isConnected) return;
 
@@ -132,8 +133,8 @@ function pushRadio(ctx) {
         return;
     }
 
-    // 不在回调内等待结果
-    void (async () => {
+    // 在回调内等待结果：响应在回调结束后不可再读取
+    await (async () => {
         try {
             const res = await request;
             const body = await res.text().catch(() => '');
@@ -334,9 +335,9 @@ export default {
 
     hooks: {
         onTimer(timerId, ctx) {
-            // 同步返回，不等待网络和电台
-            if (timerId === 'pollRadio') pushRadio(ctx);
-            else if (timerId === 'tuneQueue') drainTuneQueue(ctx);
+            // 上报在超时内等待完成；切频不等待电台执行结果
+            if (timerId === 'pollRadio') return pushRadio(ctx);
+            if (timerId === 'tuneQueue') drainTuneQueue(ctx);
         },
         async onConfigChange(changes, ctx) {
             if ('pollInterval' in changes) {
